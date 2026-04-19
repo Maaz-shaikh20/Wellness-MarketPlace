@@ -64,6 +64,19 @@ The deployment process involves coordination with the following stakeholders:
 
 ---
 
+## 5. Cloud-Specific Deployment (Vercel & Render)
+
+### Frontend: Vercel
+- **Root Directory:** `frontend`
+- **Environment Variables:** `VITE_API_URL` = [Render URL]/api
+- **SPA Routing:** Configured in `frontend/vercel.json`.
+
+### Backend: Render
+- **Blueprint:** Automatic deployment via `render.yaml`.
+- **Services:** Provisions a Managed MySQL instance and a Docker-based Web Service for the Java backend.
+
+---
+
 ## 6. Conclusion
 The deployment of the Wellness Marketplace has been planned with a focus on reliability and "Infrastructure as Code" (IaC). By using Docker and Docker Compose, we have ensured that the production environment is an exact mirror of the testing environment, significantly reducing the risk of "it works on my machine" issues.
 

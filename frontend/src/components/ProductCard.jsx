@@ -35,7 +35,7 @@ export default function ProductCard({ product, isHistory = false }) {
 
     try {
       await axios.post(
-        "http://localhost:8080/api/notifications",
+        `${import.meta.env.VITE_API_URL || "http://localhost:8080/api"}/notifications`,
         {
           userId,
           type,
@@ -78,7 +78,7 @@ const handleAddToCart = async (e) => {
 
   try {
     await axios.post(
-      `http://localhost:8080/api/cart/add?userId=${userId}`,
+      `${import.meta.env.VITE_API_URL || "http://localhost:8080/api"}/cart/add?userId=${userId}`,
       {
         productId: id,
         quantity: 1,

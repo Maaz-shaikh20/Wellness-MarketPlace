@@ -192,7 +192,33 @@
         </section>
 
         <section>
-            <h2>5. Deployment Asset: Docker Compose</h2>
+            <h2>5. Cloud-Specific Deployment (Vercel & Render)</h2>
+            <div class="step-box">
+                <h3>Frontend: Vercel</h3>
+                <ol>
+                    <li>Connect your GitHub repository to <strong>Vercel</strong>.</li>
+                    <li>Set the Root Directory to <code>frontend</code>.</li>
+                    <li>Add Environment Variable: <code>VITE_API_URL</code> = [Your Render Backend URL]/api</li>
+                    <li>Deploy. (Routing is handled by the included <code>vercel.json</code>).</li>
+                </ol>
+            </div>
+            <div class="step-box">
+                <h3>Backend & Database: Render</h3>
+                <ol>
+                    <li>Navigate to Render and create a new <strong>Blueprint</strong>.</li>
+                    <li>Select your repository. Render will detect <code>render.yaml</code>.</li>
+                    <li>Approve the Blueprint to automatically provision:
+                        <ul>
+                            <li><strong>Managed MySQL:</strong> Secure production database.</li>
+                            <li><strong>Docker Web Service:</strong> High-performance Java backend.</li>
+                        </ul>
+                    </li>
+                </ol>
+            </div>
+        </section>
+
+        <section>
+            <h2>6. Deployment Asset: Docker Compose</h2>
 <pre>
 version: '3.8'
 services:

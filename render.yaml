@@ -1,0 +1,26 @@
+services:
+  # Backend Service
+  - type: web
+    name: wellness-backend
+    env: docker
+    dockerContext: backend
+    plan: free
+    envVars:
+      - key: SPRING_DATASOURCE_URL
+        fromDatabase:
+          name: wellness-db
+          property: connectionString
+      - key: SPRING_DATASOURCE_USERNAME
+        fromDatabase:
+          name: wellness-db
+          property: user
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+          name: wellness-db
+          property: password
+
+databases:
+  - name: wellness-db
+    plan: free
+    databaseName: wellness_db
+    user: wellness_user

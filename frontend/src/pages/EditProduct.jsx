@@ -3,7 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Save, ArrowLeft, Image as ImageIcon, CreditCard, Boxes, Loader2 } from "lucide-react";
 
 // Backend base URL
-const BACKEND_URL = "http://localhost:8080"; // <-- Spring Boot backend
+// Backend base URL
+const BACKEND_URL = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace("/api", "") : "http://localhost:8080";
 
 export default function EditProduct() {
   const navigate = useNavigate();
