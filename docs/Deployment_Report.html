@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deployment Plan & Execution - Wellness Marketplace</title>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #1d4ed8;
+            --secondary: #1e293b;
+            --bg: #f8fafc;
+            --text: #334155;
+            --white: #ffffff;
+        }
+        body {
+            font-family: 'Outfit', sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background-color: var(--bg);
+            margin: 0;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 950px;
+            margin: 0 auto;
+            background: var(--white);
+            padding: 60px;
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.05);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        h1 {
+            color: var(--secondary);
+            font-size: 2.8rem;
+            margin-bottom: 0.5rem;
+            letter-spacing: -1px;
+        }
+        .badge {
+            background: var(--primary);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+        h2 {
+            color: var(--primary-dark);
+            margin-top: 3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        h2::before {
+            content: '';
+            width: 8px;
+            height: 24px;
+            background: var(--primary);
+            border-radius: 4px;
+        }
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 25px 0;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+        th, td {
+            text-align: left;
+            padding: 18px 20px;
+        }
+        th {
+            background-color: #f1f5f9;
+            color: var(--secondary);
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+        td { border-top: 1px solid #e2e8f0; }
+        .step-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 25px;
+            border-radius: 16px;
+            margin-top: 20px;
+        }
+        .step-box h3 { margin-top: 0; color: var(--secondary); }
+        .risk-high { color: #ef4444; font-weight: bold; }
+        code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+            color: #ef4444;
+        }
+        pre {
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 25px;
+            border-radius: 16px;
+            overflow-x: auto;
+            font-size: 0.85rem;
+            border: 1px solid #334155;
+        }
+        .footer {
+            margin-top: 60px;
+            padding-top: 30px;
+            border-top: 1px solid #e2e8f0;
+            text-align: center;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <span class="badge">Assignment 5</span>
+            <h1>Deployment Plan & Execution</h1>
+            <p><strong>Project:</strong> Wellness Marketplace | <strong>Status:</strong> Ready for Production</p>
+        </div>
+
+        <section>
+            <h2>1. Strategic Overview</h2>
+            <p>This document defines the transition path for the Wellness Marketplace from testing to production. We leverage <strong>Containerization</strong> to eliminate environmental discrepancies and ensure a seamless "click-to-deploy" experience.</p>
+        </section>
+
+        <section>
+            <h2>2. Infrastructure as Code (IaC)</h2>
+            <p>The deployment is fully orchestrated using Docker Compose, providing a declarative way to manage services.</p>
+            <div class="step-box">
+                <h3>Component Stack:</h3>
+                <ul>
+                    <li><strong>Web Layer:</strong> Nginx (Alpine) - High-performance static serving.</li>
+                    <li><strong>App Layer:</strong> Java 17 Spring Boot - Robust API handling.</li>
+                    <li><strong>Data Layer:</strong> MySQL 8.0 - Persistent relational storage.</li>
+                </ul>
+            </div>
+        </section>
+
+        <section>
+            <h2>3. Execution Procedure</h2>
+            <div class="step-box">
+                <h3>Step 1: Container Build</h3>
+                <p>Execute build commands to generate production-ready images:</p>
+                <code>docker build -t wellness-backend ./backend</code><br>
+                <code>docker build -t wellness-frontend ./frontend</code>
+            </div>
+            <div class="step-box">
+                <h3>Step 2: Full Stack Deployment</h3>
+                <p>Run the orchestration script to bring up all services and network dependencies:</p>
+                <code>docker-compose up -d</code>
+            </div>
+        </section>
+
+        <section>
+            <h2>4. Risk Mitigation & Reliability</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Identified Risk</th>
+                        <th>Impact</th>
+                        <th>Mitigation Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Data Corruption during Migration</td>
+                        <td class="risk-high">CRITICAL</td>
+                        <td>Mandatory DB dump before any schema changes.</td>
+                    </tr>
+                    <tr>
+                        <td>Environmental Incompatibility</td>
+                        <td>MEDIUM</td>
+                        <td>Usage of Docker ensures 100% parity between Test & Prod.</td>
+                    </tr>
+                    <tr>
+                        <td>Service Downtime</td>
+                        <td>HIGH</td>
+                        <td>Rolling updates and health check monitoring.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section>
+            <h2>5. Deployment Asset: Docker Compose</h2>
+<pre>
+version: '3.8'
+services:
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: wellness_db
+  backend:
+    build: ./backend
+    depends_on: [db]
+  frontend:
+    build: ./frontend
+    ports: ["80:80"]
+</pre>
+        </section>
+
+        <div class="footer">
+            Generated on April 19, 2026 | Wellness Marketplace DevOps Team
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Design_Specification</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+</head>
+<body>
+<h1 id="system-design-specification-wellness-marketplace">System Design
+Specification: Wellness Marketplace</h1>
+<h2
+id="applied-software-engineering-principles-for-scalability-efficiency">Applied
+Software Engineering Principles for Scalability &amp; Efficiency</h2>
+<h3
+id="author-maaz-shaikh-software-engineering-walchand-institute-of-technology">Author:
+Maaz Shaikh | Software Engineering | Walchand Institute of
+Technology</h3>
+<hr />
+<h2 id="introduction">1. Introduction</h2>
+<p>This document outlines the architectural and system design for the
+<strong>Wellness Marketplace for Alternative Therapies</strong>. The
+design focuses on fundamental software engineering principles to ensure
+the system is not only functional but also <strong>scalable, efficient,
+and maintainable</strong> as the user base grows.</p>
+<hr />
+<h2 id="design-principles-applied">2. Design Principles Applied</h2>
+<p>The system design is guided by the following core principles:</p>
+<ol type="1">
+<li><strong>Separation of Concerns (SoC)</strong>: Dividing the
+application into distinct layers (Presentation, Business Logic, Data
+Access) to minimize dependencies.</li>
+<li><strong>Modularity</strong>: Using a service-oriented approach to
+allow individual components (e.g., Payment, Booking, Auth) to be
+developed and scaled independently.</li>
+<li><strong>Scalability (Horizontal)</strong>: Designing the backend to
+be stateless, allowing multiple instances to run behind a load
+balancer.</li>
+<li><strong>Efficiency</strong>: Implementing caching and asynchronous
+processing to reduce latency and server load.</li>
+<li><strong>Security by Design</strong>: Integrating JWT-based
+authentication and role-based access control (RBAC) at every layer.</li>
+</ol>
+<hr />
+<h2 id="high-level-system-architecture">3. High-Level System
+Architecture</h2>
+<p>The system follows a <strong>Layered Micro-Kernel
+Architecture</strong> (currently a modular monolith designed for future
+microservices transition).</p>
+<h3 id="architectural-diagram">3.1 Architectural Diagram</h3>
+<figure>
+<img src="user_flow_v2.png" alt="System Architecture" />
+<figcaption aria-hidden="true">System Architecture</figcaption>
+</figure>
+<p><em>Figure 1: High-level visual representation of the wellness
+marketplace tech stack.</em></p>
+<h3 id="user-order-and-therapy-flow">3.2 User Order and Therapy
+Flow</h3>
+<figure>
+<img src="user_flow_v2.png" alt="User Order and Therapy Flow" />
+<figcaption aria-hidden="true">User Order and Therapy Flow</figcaption>
+</figure>
+<p><em>Figure 2: Detailed sequence and data flow for user orders and
+therapy sessions.</em></p>
+<hr />
+<h2 id="scalability-strategies">4. Scalability Strategies</h2>
+<h3 id="horizontal-scaling-of-application-tier">4.1 Horizontal Scaling
+of Application Tier</h3>
+<p>The Spring Boot backend is <strong>stateless</strong>. Session
+information is not stored in memory but passed via <strong>JWT
+tokens</strong>. This allows the Load Balancer to distribute traffic
+across <code>N</code> number of backend instances.</p>
+<h3 id="database-scalability-readwrite-splitting">4.2 Database
+Scalability: Read/Write Splitting</h3>
+<p>As the number of patients browsing practitioners increases, the
+database read load will spike. - <strong>Primary Node</strong>: Handles
+all <code>WRITE</code> operations (Registration, Booking, Updates). -
+<strong>Read Replicas</strong>: Multiple nodes handle <code>READ</code>
+operations (Searching practitioners, viewing profiles). This ensures
+that heavy browsing doesn’t slow down the booking process.</p>
+<h3 id="caching-with-redis">4.3 Caching with Redis</h3>
+<p>To reduce database hits for static or slow-changing data: -
+<strong>Practitioner Profiles</strong>: Frequently viewed profiles are
+cached in Redis. - <strong>Session Metadata</strong>: Temporary state
+for the booking flow. - <strong>Rate Limiting</strong>: Preventing API
+abuse by tracking request counts per IP in Redis.</p>
+<hr />
+<h2 id="efficiency-performance-optimization">5. Efficiency &amp;
+Performance Optimization</h2>
+<h3 id="asynchronous-processing-message-queues">5.1 Asynchronous
+Processing (Message Queues)</h3>
+<p>Non-critical tasks are moved out of the main request-response cycle
+to ensure fast user feedback. - <strong>Notifications</strong>: Sending
+emails or push notifications is handled by a background worker (e.g.,
+using Spring <code>@Async</code> or RabbitMQ). - <strong>AI
+Recommendations</strong>: Calculating personalized suggestions is done
+asynchronously so it doesn’t block the UI.</p>
+<h3 id="database-indexing">5.2 Database Indexing</h3>
+<p>Critical columns such as <code>email</code>,
+<code>practitioner_id</code>, <code>specialization</code>, and
+<code>session_date</code> are indexed to ensure <code>O(log n)</code>
+search complexity instead of <code>O(n)</code>.</p>
+<hr />
+<h2 id="data-design-entity-relationship-diagram">6. Data Design (Entity
+Relationship Diagram)</h2>
+<p>The database is normalized to <strong>3rd Normal Form (3NF)</strong>
+to ensure data integrity and reduce redundancy.</p>
+<p>The system’s data architecture is normalized to 3rd Normal Form (3NF)
+to ensure data integrity. The core entities include User, Practitioner
+Profile, Therapy Session, Order, and Notification, as visualized in the
+preceding flow diagrams.</p>
+<hr />
+<h2 id="security-architecture">7. Security Architecture</h2>
+<p>The system implements a multi-layered security approach:</p>
+<ol type="1">
+<li><strong>Transport Layer Security (TLS)</strong>: All data in transit
+is encrypted via HTTPS.</li>
+<li><strong>Authentication</strong>: JWT (JSON Web Tokens) are used for
+stateless auth.</li>
+<li><strong>Authorization</strong>: Method-level security in Spring Boot
+(<code>@PreAuthorize</code>) ensures that only Admins can verify
+practitioners and only Practitioners can manage their own
+therapies.</li>
+<li><strong>Data Masking</strong>: PII (Personally Identifiable
+Information) like passwords are salted and hashed using
+<strong>BCrypt</strong>.</li>
+</ol>
+<hr />
+<h2 id="reliability-fault-tolerance">8. Reliability &amp; Fault
+Tolerance</h2>
+<ul>
+<li><strong>Database Backups</strong>: Automated nightly backups to
+prevent data loss.</li>
+<li><strong>Health Checks</strong>: Spring Boot Actuator provides
+endpoints for the Load Balancer to detect and remove “unhealthy”
+instances.</li>
+<li><strong>Graceful Degradation</strong>: If the AI Recommendation
+engine is down, the system defaults to showing “Top Rated” practitioners
+instead of failing.</li>
+</ul>
+<hr />
+<h2 id="conclusion">9. Conclusion</h2>
+<p>By applying these software engineering principles, the Wellness
+Marketplace is transformed from a basic application into a
+production-ready system. The combination of <strong>stateless backend
+scaling</strong>, <strong>database replication</strong>,
+<strong>distributed caching</strong>, and <strong>asynchronous
+workflows</strong> ensures that the platform can handle thousands of
+concurrent users while maintaining high performance and security.</p>
+<hr />
+<p><em>Prepared by: <strong>Maaz Shaikh</strong></em> <em>Course:
+Software Engineering | Walchand Institute of Technology</em>
+<em>Project: Wellness Marketplace for Alternative Therapies</em>
+<em>Version: 1.0 | Date: April 2026</em></p>
+</body>
+</html>

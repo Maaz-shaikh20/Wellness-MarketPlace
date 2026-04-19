@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Testing & QA Report - Wellness Marketplace</title>
+    <style>
+        :root {
+            --primary: #10b981;
+            --primary-dark: #059669;
+            --secondary: #1f2937;
+            --bg: #f9fafb;
+            --text: #374151;
+            --white: #ffffff;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background-color: var(--bg);
+            margin: 0;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--white);
+            padding: 50px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        }
+        h1 {
+            color: var(--secondary);
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            border-bottom: 4px solid var(--primary);
+            display: inline-block;
+        }
+        h2 {
+            color: var(--primary-dark);
+            margin-top: 2rem;
+            border-left: 5px solid var(--primary);
+            padding-left: 15px;
+        }
+        .meta {
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-bottom: 2rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.9rem;
+        }
+        th, td {
+            text-align: left;
+            padding: 12px 15px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        th {
+            background-color: #f3f4f6;
+            color: var(--secondary);
+            font-weight: 700;
+        }
+        .status-pass {
+            color: #059669;
+            font-weight: bold;
+        }
+        .severity-high { color: #dc2626; font-weight: bold; }
+        .severity-med { color: #d97706; font-weight: bold; }
+        .severity-low { color: #2563eb; font-weight: bold; }
+        code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+        }
+        pre {
+            background: #1e293b;
+            color: #f8fafc;
+            padding: 20px;
+            border-radius: 12px;
+            overflow-x: auto;
+        }
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #9ca3af;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Software Testing & QA Report</h1>
+        <p class="meta"><strong>Project:</strong> Wellness Marketplace | <strong>Assignment:</strong> 4 | <strong>Date:</strong> April 19, 2026</p>
+
+        <section>
+            <h2>1. Introduction</h2>
+            <p>This report documents the software testing and quality assurance (QA) procedures applied to the Wellness Marketplace system. The objective was to validate functionality, reliability, and performance through structured testing and implement scalability optimizations.</p>
+        </section>
+
+        <section>
+            <h2>2. Testing Strategy</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Test Level</th>
+                        <th>Focus Area</th>
+                        <th>Tools</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Unit Testing</td>
+                        <td>Business logic in Services & Utilities</td>
+                        <td>JUnit 5, Mockito</td>
+                    </tr>
+                    <tr>
+                        <td>Integration Testing</td>
+                        <td>API Endpoints & DB Persistence</td>
+                        <td>Spring MockMvc, H2</td>
+                    </tr>
+                    <tr>
+                        <td>Component Testing</td>
+                        <td>UI Responsiveness & Frontend Logic</td>
+                        <td>Vitest, RTL</td>
+                    </tr>
+                    <tr>
+                        <td>Manual E2E</td>
+                        <td>Complete User Journeys</td>
+                        <td>Browser Validation</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section>
+            <h2>3. Test Cases and Outcomes</h2>
+            <h3>3.1 Backend Functional Tests</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Feature</th>
+                        <th>Expected Outcome</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>TC-BE-01</td>
+                        <td>Positive Quantity Cart</td>
+                        <td>Success</td>
+                        <td class="status-pass">PASSED</td>
+                    </tr>
+                    <tr>
+                        <td>TC-BE-02</td>
+                        <td>Negative Quantity Cart</td>
+                        <td>Validation Error</td>
+                        <td class="status-pass">PASSED</td>
+                    </tr>
+                    <tr>
+                        <td>TC-BE-03</td>
+                        <td>Empty Order Items</td>
+                        <td>Validation Error</td>
+                        <td class="status-pass">PASSED</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section>
+            <h2>4. Defect Diagnosis & Rectification</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Severity</th>
+                        <th>Description</th>
+                        <th>Rectification Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>BUG-001</td>
+                        <td class="severity-med">Medium</td>
+                        <td>Negative quantities allowed in cart</td>
+                        <td>Implemented <code>RuntimeException</code> checks in <code>CartService</code></td>
+                    </tr>
+                    <tr>
+                        <td>BUG-002</td>
+                        <td class="severity-high">High</td>
+                        <td>Empty orders could be processed</td>
+                        <td>Added list-empty validation in <code>OrderService</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section>
+            <h2>5. Efficiency & Scalability</h2>
+            <ul>
+                <li><strong>Database Indexing:</strong> Added <code>idx_orders_user_id</code> to optimize order history queries.</li>
+                <li><strong>Lazy Loading:</strong> Configured <code>FetchType.LAZY</code> for order items to reduce memory overhead.</li>
+                <li><strong>Frontend Fallbacks:</strong> Implemented <code>onError</code> handlers for product images to maintain UI stability.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>6. Code Snippet: Performance Optimization</h2>
+<pre>
+@Table(name = "orders", indexes = {
+    @Index(name = "idx_orders_user_id", columnList = "user_id")
+})
+public class Order {
+    // Optimized for rapid historical data retrieval
+}
+</pre>
+        </section>
+
+        <div class="footer">
+            &copy; 2026 Wellness Marketplace QA Team. All rights reserved.
+        </div>
+    </div>
+</body>
+</html>
