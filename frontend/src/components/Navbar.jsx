@@ -20,7 +20,7 @@ export default function Navbar({ user, onLogout, onProfileClick }) {
 
   const fetchUnreadCount = async () => {
     try {
-      const res = await api.get(`/notifications/user/${user.id}`);
+      const res = await api.get(`/notifications/${user.id}`);
       const unread = res.data.filter(n => n.status === "UNREAD").length;
       setUnreadCount(unread);
     } catch (err) {
