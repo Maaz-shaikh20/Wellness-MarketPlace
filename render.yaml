@@ -46,7 +46,7 @@ services:
       - key: JAVA_TOOL_OPTIONS
         value: "-Djava.net.preferIPv4Stack=true"
       - key: APP_CORS_ALLOWED_ORIGINS
-        value: "https://frontend-murex-three-34.vercel.app,http://localhost:5173"
+        value: "https://*.vercel.app,http://localhost:5173,http://localhost:3000"
 
 
 
