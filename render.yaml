@@ -43,4 +43,7 @@ services:
         value: update
       - key: JWT_SECRET
         generateValue: true
+      - key: JAVA_TOOL_OPTIONS
+        value: -Djava.net.preferIPv4Stack=true
+
 
