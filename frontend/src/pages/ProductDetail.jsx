@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import axios from "axios";
+import api from "../api/axios";
 
 /* -------- time formatter -------- */
 const timeAgo = (timestamp) => {
@@ -68,8 +68,8 @@ export default function ProductDetail() {
   useEffect(() => {
     const fetchReviews = async () => {
       try {
-        const res = await axios.get(
-          `http://localhost:8080/api/product-reviews/product/${product.id || urlId}`
+        const res = await api.get(
+          `/product-reviews/product/${product.id || urlId}`
         );
         setReviews(res.data || []);
       } catch (err) {
@@ -90,24 +90,16 @@ export default function ProductDetail() {
     }
 
     try {
-      // Calling your specific API: http://localhost:8080/api/cart/add?userId=XX
-      const response = await axios.post(
-        `http://localhost:8080/api/cart/add?userId=${user.id}`,
+      const response = await api.post(
+        `/cart/add?userId=${user.id}`,
         { 
           productId: product.id, 
           quantity: 1 
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
         }
       );
 
       if (response.status === 200 || response.data === "Product added to cart") {
         alert("Product added to cart!");
-        // Optional: navigate("/activity"); 
       }
     } catch (err) {
       console.error("Add to cart failed:", err);
@@ -139,19 +131,13 @@ export default function ProductDetail() {
     }
 
     try {
-      await axios.post(
-        "http://localhost:8080/api/product-reviews",
+      await api.post(
+        "/product-reviews",
         {
           productId: product.id,
           userId: user.id,
           review: newReview,
           rating: newRating,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
         }
       );
 

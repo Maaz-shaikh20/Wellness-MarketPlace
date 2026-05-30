@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import axios from "axios";
+import api from "../api/axios";
 import {
   Plus,
   ArrowLeft,
@@ -56,20 +56,16 @@ export default function CreateProduct() {
 
     try {
       const url = isEditMode 
-        ? `http://localhost:8080/api/products/${productToEdit.id}` 
-        : "http://localhost:8080/api/products";
+        ? `/products/${productToEdit.id}` 
+        : "/products";
       
       // Use PUT for updates, POST for new items
       const method = isEditMode ? "put" : "post";
 
-      const response = await axios({
+      const response = await api({
         method: method,
         url: url,
-        data: productData,
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}` // FIX: Sending the token to avoid 403
-        }
+        data: productData
       });
 
       if (response.status === 200 || response.status === 201) {

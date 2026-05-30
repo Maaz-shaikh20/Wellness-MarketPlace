@@ -1,4 +1,4 @@
-import axios from "axios";
+import api from "../../api/axios";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -24,15 +24,8 @@ export default function PaymentResultPage() {
       return;
     }
 
-    axios
-      .get(
-        `http://localhost:8080/api/payments/status/${paymentId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      )
+    api
+      .get(`/payments/status/${paymentId}`)
       .then((res) => setStatus(res.data))
       .catch((err) => console.error(err))
       .finally(() => setLoading(false));

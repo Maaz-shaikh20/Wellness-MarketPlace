@@ -1,10 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Save, ArrowLeft, Image as ImageIcon, CreditCard, Boxes, Loader2 } from "lucide-react";
-
-// Backend base URL
-// Backend base URL
-const BACKEND_URL = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace("/api", "") : "http://localhost:8080";
+import api from "../api/axios";
 
 export default function EditProduct() {
   const navigate = useNavigate();
@@ -27,20 +24,8 @@ export default function EditProduct() {
 
     const fetchProduct = async () => {
       try {
-        // If backend requires auth, attach token here
-        const token = localStorage.getItem("token"); // <-- store JWT after login
-        const response = await fetch(`${BACKEND_URL}/api/products/${id}`, {
-          headers: token
-            ? { Authorization: `Bearer ${token}` }
-            : {},
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setForm(data);
-        } else {
-          console.error("Product not found or access denied", response.status);
-        }
+        const response = await api.get(`/products/${id}`);
+        setForm(response.data);
       } catch (error) {
         console.error("Failed to connect to backend:", error);
       } finally {
@@ -66,23 +51,12 @@ export default function EditProduct() {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem("token"); // <-- attach JWT for PUT request
+      const response = await api.put(`/products/${id}`, form);
 
-      const response = await fetch(`${BACKEND_URL}/api/products/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token && { Authorization: `Bearer ${token}` }),
-        },
-        body: JSON.stringify(form),
-      });
-
-      if (response.ok) {
+      if (response.status === 200 || response.status === 204) {
         alert("Success! Product updated.");
         navigate(-1);
       } else {
-        const errorText = await response.text();
-        console.error("Server error details:", errorText);
         alert(`Update failed with status: ${response.status}`);
       }
     } catch (err) {

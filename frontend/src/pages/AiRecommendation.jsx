@@ -3,6 +3,10 @@ import api from "../api/axios";
 import Navbar from "../components/Navbar";
 import axios from "axios"; // ✅ Import standard axios for external/direct calls
 
+const BACKEND_URL = import.meta.env.VITE_API_URL 
+  ? import.meta.env.VITE_API_URL.replace("/api", "") 
+  : "http://localhost:8080";
+
 export default function AiRecommendation() {
   const [symptom, setSymptom] = useState("");
   const [history, setHistory] = useState([]);
@@ -45,11 +49,7 @@ export default function AiRecommendation() {
     if (!searchQuery) return;
     setSearching(true);
     try {
-      /** * ✅ FIX: Since your backend is at http://localhost:8080/external
-       * and your 'api' instance adds '/api' automatically, we call the 
-       * full URL or use a relative path that breaks out of the prefix.
-       */
-      const res = await api.get(`http://localhost:8080/external/openfda/search?query=${searchQuery}`);
+      const res = await api.get(`${BACKEND_URL}/external/openfda/search?query=${searchQuery}`);
       setFdaResults(res.data.results || []);
     } catch (err) {
       console.error("FDA Search failed", err);

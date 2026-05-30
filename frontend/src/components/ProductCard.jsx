@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../api/axios";
 
 export default function ProductCard({ product, isHistory = false }) {
   const navigate = useNavigate();
@@ -34,16 +34,13 @@ export default function ProductCard({ product, isHistory = false }) {
     if (!token) return;
 
     try {
-      await axios.post(
-        `${import.meta.env.VITE_API_URL || "http://localhost:8080/api"}/notifications`,
+      await api.post(
+        "/notifications",
         {
           userId,
           type,
           message: `${msg}: ${name}`,
           status: "UNREAD",
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
         }
       );
     } catch (err) {
@@ -77,17 +74,11 @@ const handleAddToCart = async (e) => {
   }
 
   try {
-    await axios.post(
-      `${import.meta.env.VITE_API_URL || "http://localhost:8080/api"}/cart/add?userId=${userId}`,
+    await api.post(
+      `/cart/add?userId=${userId}`,
       {
         productId: id,
         quantity: 1,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
       }
     );
 

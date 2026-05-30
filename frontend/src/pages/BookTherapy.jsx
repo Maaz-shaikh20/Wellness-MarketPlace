@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../api/axios";
 import {
   Search,
   Filter,
@@ -21,10 +21,8 @@ export default function BookTherapy() {
   const token = localStorage.getItem("token");
 
   useEffect(() => {
-    axios
-      .get("http://localhost:8080/api/therapies", {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+    api
+      .get("/therapies")
       .then(async (res) => {
         const list = res.data;
         setTherapies(list);
@@ -33,10 +31,8 @@ export default function BookTherapy() {
         const uniqueIds = [...new Set(list.map((t) => t.practitionerId).filter(Boolean))];
         const profiles = await Promise.all(
           uniqueIds.map((pid) =>
-            axios
-              .get(`http://localhost:8080/api/practitioners/${pid}`, {
-                headers: { Authorization: `Bearer ${token}` },
-              })
+            api
+              .get(`/practitioners/${pid}`)
               .then((r) => ({ id: pid, data: r.data }))
               .catch(() => ({ id: pid, data: null }))
           )

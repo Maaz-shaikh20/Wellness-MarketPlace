@@ -51,6 +51,9 @@ import PrivateRoute from "./routes/PrivateRoute";
 import AdminRoute from "./routes/AdminRoute";
 import PractitionerRoute from "./routes/PractitionerRoute";
 
+/* ========= CHATBOT ========= */
+import Chatbot from "./components/Chatbot";
+
 /* ========= ROUTE LOGGER ========= */
 function RouteLogger() {
   const location = useLocation();
@@ -104,13 +107,13 @@ export default function App() {
           path="/practitioner/home"
           element={<PractitionerRoute><PractitionerHome /></PractitionerRoute>}
         />
-        
+
         <Route
           path="/practitioner/profile"
           element={
-          <PractitionerRoute>
-          <PractitionerProfile />
-          </PractitionerRoute>}
+            <PractitionerRoute>
+              <PractitionerProfile />
+            </PractitionerRoute>}
         />
 
 
@@ -157,6 +160,9 @@ export default function App() {
         {/* ========= FALLBACK ========= */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
+
+      {/* Global Chatbot Widget */}
+      <Chatbot />
     </Router>
   );
 }

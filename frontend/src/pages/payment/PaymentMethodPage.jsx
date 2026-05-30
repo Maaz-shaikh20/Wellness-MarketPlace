@@ -1,4 +1,4 @@
-import axios from "axios";
+import api from "../../api/axios";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -22,17 +22,11 @@ export default function PaymentMethodPage() {
 
   const handlePayment = async () => {
     try {
-      const response = await axios.post(
-        "http://localhost:8080/api/payments/initiate",
+      const response = await api.post(
+        "/payments/initiate",
         {
           orderId,
           paymentMethod: "UPI",
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
         }
       );
 

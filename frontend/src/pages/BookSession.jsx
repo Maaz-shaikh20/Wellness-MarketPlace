@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api/axios";
 import {
   Calendar,
   Clock,
@@ -29,25 +29,21 @@ export default function BookSession() {
   const token = localStorage.getItem("token");
 
   useEffect(() => {
-    axios
-      .get("http://localhost:8080/api/therapies", {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+    api
+      .get("/therapies")
       .then(res => {
         const found = res.data.find(t => String(t.id) === String(id));
         setTherapy(found);
         if (found?.practitionerId) {
           // Fetch practitioner profile to get clinic address
-          axios
-            .get(`http://localhost:8080/api/practitioners/${found.practitionerId}`, {
-              headers: { Authorization: `Bearer ${token}` }
-            })
+          api
+            .get(`/practitioners/${found.practitionerId}`)
             .then(pRes => setPractitioner(pRes.data))
             .catch(() => {});
         }
       })
       .catch(err => console.error(err));
-  }, [id, token]);
+  }, [id]);
 
   if (!therapy)
     return (
@@ -62,33 +58,30 @@ export default function BookSession() {
     if (!selectedDate || !selectedSlot) return;
 
     const dateTime = `${selectedDate}T${selectedSlot}:00`;
-    const config = { headers: { Authorization: `Bearer ${token}` } };
 
     try {
       setLoading(true);
 
-      await axios.post(
-        "http://localhost:8080/api/sessions/book",
+      await api.post(
+        "/sessions/book",
         {
           therapyId: therapy.id,
           practitionerId: therapy.practitionerId,
           userId,
           dateTime,
           notes: therapy.name
-        },
-        config
+        }
       );
 
       try {
-        await axios.post(
-          "http://localhost:8080/api/notifications",
+        await api.post(
+          "/notifications",
           {
             userId,
             type: "SESSION",
             message: `New Session Confirmed: ${therapy.name} on ${selectedDate} at ${selectedSlot}`,
             status: "UNREAD"
-          },
-          config
+          }
         );
       } catch {}
 
