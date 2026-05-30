@@ -28,7 +28,7 @@ services:
     name: wellness-backend
     env: docker
     dockerContext: backend
-    dockerfilePath: backend/Dockerfile
+    dockerfilePath: Dockerfile # FIX: must be relative to dockerContext (backend/)
     plan: free
     envVars:
       # Database connection environment variables
