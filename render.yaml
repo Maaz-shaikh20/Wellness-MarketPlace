@@ -1,5 +1,29 @@
 services:
-  # Backend Service
+  # ----------------------------------------------------
+  # Frontend Service (Static Site - Free & Fast)
+  # ----------------------------------------------------
+  - type: static
+    name: wellness-frontend
+    env: static
+    rootDir: frontend
+    buildCommand: npm run build
+    publishPath: dist
+    headers:
+      - path: /*
+        headers:
+          - key: Cache-Control
+            value: public, max-age=31536000, immutable
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: ${wellness-backend}/api
+
+  # ----------------------------------------------------
+  # Backend Service (Docker Web Service)
+  # ----------------------------------------------------
   - type: web
     name: wellness-backend
     env: docker
@@ -7,9 +31,16 @@ services:
     dockerfilePath: backend/Dockerfile
     plan: free
     envVars:
+      # Database connection environment variables
+      # Pre-filled with Clever Cloud MySQL details
       - key: SPRING_DATASOURCE_URL
-        sync: false
+        value: jdbc:mysql://bvg3nlportc0notrgv4r-mysql.services.clever-cloud.com:3306/bvg3nlportc0notrgv4r?useSSL=false&allowPublicKeyRetrieval=true
       - key: SPRING_DATASOURCE_USERNAME
-        sync: false
+        value: u6lkvqznrpxton0p
       - key: SPRING_DATASOURCE_PASSWORD
-        sync: false
+        value: xCDDM2ygJ5puOrvh3ynG
+      - key: SPRING_JPA_HIBERNATE_DDL_AUTO
+        value: update
+      - key: JWT_SECRET
+        generateValue: true
+
