@@ -51,8 +51,7 @@ import PrivateRoute from "./routes/PrivateRoute";
 import AdminRoute from "./routes/AdminRoute";
 import PractitionerRoute from "./routes/PractitionerRoute";
 
-/* ========= CHATBOT ========= */
-import Chatbot from "./components/Chatbot";
+
 
 /* ========= ROUTE LOGGER ========= */
 function RouteLogger() {
@@ -161,8 +160,6 @@ export default function App() {
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
 
-      {/* Global Chatbot Widget */}
-      <Chatbot />
     </Router>
   );
 }

@@ -12,17 +12,21 @@ export default function Navbar({ user, onLogout, onProfileClick }) {
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
-    
-    if (user?.id) fetchUnreadCount();
-
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [user]);
+  }, []);
+
+  // Poll for unread notifications every 30 seconds
+  useEffect(() => {
+    if (!user?.id) return;
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, [user?.id]);
 
   const fetchUnreadCount = async () => {
     try {
-      const res = await api.get(`/notifications/${user.id}`);
-      const unread = res.data.filter(n => n.status === "UNREAD").length;
-      setUnreadCount(unread);
+      const res = await api.get(`/notifications/${user.id}/unread`);
+      setUnreadCount(res.data.length);
     } catch (err) {
       console.error("Could not fetch notification count", err);
     }
