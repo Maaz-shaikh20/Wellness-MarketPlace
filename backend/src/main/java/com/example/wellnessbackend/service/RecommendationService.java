@@ -72,6 +72,22 @@ public class RecommendationService {
         return list.stream().map(this::mapToResponseDto).collect(Collectors.toList());
     }
 
+    // Delete a single recommendation by ID
+    public boolean deleteById(Long id) {
+        if (recommendationRepository.existsById(id)) {
+            recommendationRepository.deleteById(id);
+            return true;
+        }
+        return false;
+    }
+
+    // Delete all recommendations for a user
+    public int deleteAllByUserId(Long userId) {
+        List<Recommendation> list = recommendationRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        recommendationRepository.deleteAll(list);
+        return list.size();
+    }
+
     private RecommendationResponseDto mapToResponseDto(Recommendation recommendation) {
         RecommendationResponseDto dto = new RecommendationResponseDto();
         dto.setId(recommendation.getId());

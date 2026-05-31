@@ -69,6 +69,14 @@ public class NotificationService {
         return notificationOpt; // return Optional so controller can handle 404
     }
 
+    // Mark all notifications as read for a user
+    public int markAllAsRead(Long userId) {
+        List<Notification> unread = notificationRepository.findByUserIdAndReadFalseOrderByCreatedAtDesc(userId);
+        unread.forEach(n -> n.setRead(true));
+        notificationRepository.saveAll(unread);
+        return unread.size();
+    }
+
     // Mapper: Entity -> DTO
     private NotificationResponseDto mapToDto(Notification notification) {
         return NotificationResponseDto.builder()

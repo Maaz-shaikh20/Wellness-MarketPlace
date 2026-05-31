@@ -19,7 +19,11 @@ export default function Notifications() {
     try {
       setLoading(true);
       const res = await api.get(`/notifications/${user.id}`);
-      setNotifications(res.data);
+      const mapped = res.data.map(n => ({
+        ...n,
+        status: n.read ? "READ" : "UNREAD"
+      }));
+      setNotifications(mapped);
     } catch (err) {
       console.error("Failed to fetch notifications", err);
     } finally {
@@ -44,6 +48,17 @@ export default function Notifications() {
       }
     } catch (err) {
       console.error("Failed to process notification", err);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await api.put(`/notifications/user/${user.id}/read-all`);
+      setNotifications(prev =>
+        prev.map(n => ({ ...n, status: "READ", read: true }))
+      );
+    } catch (err) {
+      console.error("Failed to mark all as read", err);
     }
   };
 
@@ -73,13 +88,23 @@ export default function Notifications() {
               Inbound_<span className="text-slate-300">Alerts</span>
             </h1>
           </div>
-          <div className="text-right">
-            <p className="text-[10px] font-black uppercase text-slate-400">
-              Unread_Count
-            </p>
-            <p className="text-4xl font-light text-slate-900">
-              {unreadCount}
-            </p>
+          <div className="flex flex-col items-end gap-3 text-right">
+            <div>
+              <p className="text-[10px] font-black uppercase text-slate-400">
+                Unread_Count
+              </p>
+              <p className="text-4xl font-light text-slate-900">
+                {unreadCount}
+              </p>
+            </div>
+            {unreadCount > 0 && (
+              <button
+                onClick={handleMarkAllAsRead}
+                className="px-4 py-2 border border-slate-200 hover:border-slate-950 text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-50 transition-all shadow-sm"
+              >
+                Mark All As Read
+              </button>
+            )}
           </div>
         </div>
 

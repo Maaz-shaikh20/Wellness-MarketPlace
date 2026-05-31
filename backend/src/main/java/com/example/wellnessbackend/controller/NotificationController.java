@@ -51,4 +51,11 @@ public class NotificationController {
                 .orElseGet(() -> ResponseEntity.status(404)
                         .body("Notification with ID " + notificationId + " not found"));
     }
+
+    // ✅ Mark all notifications as read for a user
+    @PutMapping("/user/{userId}/read-all")
+    public ResponseEntity<String> markAllAsRead(@PathVariable Long userId) {
+        int count = notificationService.markAllAsRead(userId);
+        return ResponseEntity.ok("Marked " + count + " notifications as read successfully");
+    }
 }

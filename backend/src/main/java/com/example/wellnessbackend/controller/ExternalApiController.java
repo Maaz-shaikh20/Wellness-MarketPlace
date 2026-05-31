@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/external")
+@RequestMapping("/api/external")
 @RequiredArgsConstructor
 public class ExternalApiController {
 

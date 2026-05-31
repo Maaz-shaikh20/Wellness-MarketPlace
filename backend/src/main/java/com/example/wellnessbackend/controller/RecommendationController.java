@@ -39,4 +39,22 @@ public class RecommendationController {
 
         return ResponseEntity.ok(list);
     }
+
+    // ------------------- Delete a single recommendation -------------------
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteRecommendation(@PathVariable Long id) {
+        boolean deleted = recommendationService.deleteById(id);
+        if (deleted) {
+            return ResponseEntity.ok("Recommendation deleted successfully");
+        }
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body("Recommendation not found with id: " + id);
+    }
+
+    // ------------------- Clear all recommendations of a user -------------------
+    @DeleteMapping("/user/{userId}/all")
+    public ResponseEntity<String> clearAllRecommendations(@PathVariable Long userId) {
+        int count = recommendationService.deleteAllByUserId(userId);
+        return ResponseEntity.ok("Cleared " + count + " recommendations for user " + userId);
+    }
 }

@@ -136,6 +136,10 @@ public class SecurityConfig {
                                 "/api/recommendations/user/**"
                         ).hasAnyRole("PATIENT", "ADMIN")
 
+                        .requestMatchers(HttpMethod.DELETE,
+                                "/api/recommendations/**"
+                        ).hasAnyRole("PATIENT", "ADMIN")
+
                         // ======================
                         // NOTIFICATIONS
                         // ======================
@@ -144,6 +148,10 @@ public class SecurityConfig {
                         ).hasRole("PATIENT")
 
                         .requestMatchers(HttpMethod.GET,
+                                "/api/notifications/**"
+                        ).hasAnyRole("PATIENT", "ADMIN")
+
+                        .requestMatchers(HttpMethod.PUT,
                                 "/api/notifications/**"
                         ).hasAnyRole("PATIENT", "ADMIN")
 
@@ -160,7 +168,7 @@ public class SecurityConfig {
                                 "/error",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
-                                "/external/**"
+                                "/api/external/**"
                         ).permitAll()
 
                         // ======================
