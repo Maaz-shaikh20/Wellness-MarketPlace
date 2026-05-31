@@ -30,8 +30,8 @@ export default function ProductDetail() {
   const navigate = useNavigate();
   const { id: urlId } = useParams(); // URL ID as backup
   
-  // Use state if available, otherwise we could fetch (handled in useEffect if needed)
-  const product = state?.item;
+  const [product, setProduct] = useState(state?.item || null);
+  const [fetchingProduct, setFetchingProduct] = useState(!state?.item);
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const token = localStorage.getItem("token");
@@ -47,12 +47,42 @@ export default function ProductDetail() {
 
   const visibleReviews = showAllReviews ? reviews : reviews.slice(0, 5);
 
-  // If page is refreshed and state is lost
+  useEffect(() => {
+    if (!product && urlId) {
+      const fetchProduct = async () => {
+        try {
+          const res = await api.get(`/products/${urlId}`);
+          setProduct(res.data);
+        } catch (err) {
+          console.error("Failed to fetch product:", err);
+        } finally {
+          setFetchingProduct(false);
+        }
+      };
+      fetchProduct();
+    }
+  }, [product, urlId]);
+
+  if (fetchingProduct) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center bg-white font-mono">
+        <div className="w-12 h-12 border-4 border-slate-900 border-t-transparent rounded-full animate-spin mb-4" />
+        <span className="tracking-widest uppercase text-xs font-bold text-slate-500">
+          Loading Product details...
+        </span>
+      </div>
+    );
+  }
+
+  // If page is refreshed and state is lost and fetch fails
   if (!product) {
     return (
       <div className="h-screen flex flex-col items-center justify-center gap-4">
-        <p>Product data not found.</p>
-        <button onClick={() => navigate("/products")} className="text-blue-500 underline">
+        <p className="text-slate-500 font-bold">Product data not found.</p>
+        <button
+          onClick={() => navigate("/products")}
+          className="px-6 py-3 bg-slate-900 text-white rounded-xl font-bold text-sm shadow hover:bg-slate-800 transition"
+        >
           Return to Products
         </button>
       </div>
@@ -66,6 +96,7 @@ export default function ProductDetail() {
 
   /* -------- fetch reviews -------- */
   useEffect(() => {
+    if (!product) return;
     const fetchReviews = async () => {
       try {
         const res = await api.get(
@@ -79,7 +110,7 @@ export default function ProductDetail() {
       }
     };
     fetchReviews();
-  }, [product.id, urlId]);
+  }, [product?.id, urlId]);
 
   /* -------- 1. ADD TO CART (API Call) -------- */
   const handleAddToCart = async () => {
