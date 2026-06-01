@@ -6,6 +6,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import { useEffect } from "react";
+import { CartProvider } from "./context/CartContext";
 
 /* ========= AUTH & USER ========= */
 import Login from "./pages/Login";
@@ -64,6 +65,7 @@ function RouteLogger() {
 
 export default function App() {
   return (
+    <CartProvider>
     <Router>
       <RouteLogger />
 
@@ -161,5 +163,6 @@ export default function App() {
       </Routes>
 
     </Router>
+    </CartProvider>
   );
 }

@@ -78,6 +78,12 @@ public class OrderService {
                 .orElseThrow(() -> new RuntimeException("Order not found"));
     }
 
+    public List<OrderResponseDto> getOrdersByUser(Long userId) {
+        return orderRepository.findByUserId(userId).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
     public void updateOrderStatus(Order order, String status) {
         order.setStatus(status);
         order.setUpdatedAt(LocalDateTime.now());
@@ -91,6 +97,9 @@ public class OrderService {
                 .userId(order.getUserId())
                 .status(order.getStatus())
                 .totalAmount(order.getTotalAmount())
+                .deliveryAddress(order.getDeliveryAddress())
+                .phoneNumber(order.getPhoneNumber())
+                .deliveryMessage(order.getDeliveryMessage())
                 .createdAt(order.getCreatedAt())
                 .items(order.getOrderItems().stream().map(item ->
                         OrderResponseDto.OrderItemResponseDto.builder()

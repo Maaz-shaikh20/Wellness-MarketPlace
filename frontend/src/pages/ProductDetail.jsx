@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import api from "../api/axios";
+import { useCart } from "../context/CartContext";
 
 /* -------- time formatter -------- */
 const timeAgo = (timestamp) => {
@@ -35,6 +36,7 @@ export default function ProductDetail() {
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const token = localStorage.getItem("token");
+  const { refreshCart } = useCart();
 
   const [reviews, setReviews] = useState([]);
   const [expandedReviews, setExpandedReviews] = useState({});
@@ -44,6 +46,7 @@ export default function ProductDetail() {
   const [newReview, setNewReview] = useState("");
   const [newRating, setNewRating] = useState(0);
   const [error, setError] = useState("");
+  const [cartToast, setCartToast] = useState(""); // "" | "success" | "error"
 
   const visibleReviews = showAllReviews ? reviews : reviews.slice(0, 5);
 
@@ -130,11 +133,14 @@ export default function ProductDetail() {
       );
 
       if (response.status === 200 || response.data === "Product added to cart") {
-        alert("Product added to cart!");
+        setCartToast("success");
+        refreshCart(); // ✅ Update navbar badge immediately
+        setTimeout(() => setCartToast(""), 3000);
       }
     } catch (err) {
       console.error("Add to cart failed:", err);
-      alert("Failed to add product to cart");
+      setCartToast("error");
+      setTimeout(() => setCartToast(""), 3000);
     }
   };
 
@@ -194,7 +200,33 @@ export default function ProductDetail() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Navbar />
+      <Navbar user={user?.id ? user : null} />
+
+      {/* CART TOAST NOTIFICATION */}
+      <div
+        className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] transition-all duration-500 ${
+          cartToast
+            ? "opacity-100 translate-y-0 pointer-events-auto"
+            : "opacity-0 translate-y-4 pointer-events-none"
+        }`}
+      >
+        {cartToast === "success" && (
+          <div className="flex items-center gap-3 bg-slate-900 text-white px-6 py-3.5 rounded-2xl shadow-2xl text-sm font-semibold">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            </svg>
+            Added to cart! View your cart in the navbar.
+          </div>
+        )}
+        {cartToast === "error" && (
+          <div className="flex items-center gap-3 bg-rose-600 text-white px-6 py-3.5 rounded-2xl shadow-2xl text-sm font-semibold">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Failed to add to cart. Please try again.
+          </div>
+        )}
+      </div>
 
       <main className="pt-32 pb-20 max-w-7xl mx-auto px-6">
         <button onClick={() => navigate(-1)} className="mb-10 text-sm text-slate-400">

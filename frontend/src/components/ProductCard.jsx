@@ -1,11 +1,14 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
+import { useCart } from "../context/CartContext";
 
 export default function ProductCard({ product, isHistory = false }) {
   const navigate = useNavigate();
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState("success"); // "success" | "error"
+  const { refreshCart } = useCart();
 
   // DATA NORMALIZATION
   const d = product?.item || product?.product || product;
@@ -21,14 +24,15 @@ export default function ProductCard({ product, isHistory = false }) {
     d?.imageUrl ||
     d?.img ||
     d?.thumbnail ||
-    "https://via.placeholder.com/150?text=Wellness";
+    "https://placehold.co/150x150?text=🌿";
 
   const userId = JSON.parse(localStorage.getItem("user"))?.id;
 
-  const triggerToast = async (msg, type = "GENERAL") => {
+  const triggerToast = async (msg, type = "GENERAL", kind = "success") => {
     setToastMessage(msg);
+    setToastType(kind);
     setShowToast(true);
-    setTimeout(() => setShowToast(false), 3000);
+    setTimeout(() => setShowToast(false), 2500);
 
     const token = localStorage.getItem("token");
     if (!token) return;
@@ -76,16 +80,13 @@ const handleAddToCart = async (e) => {
   try {
     await api.post(
       `/cart/add?userId=${userId}`,
-      {
-        productId: id,
-        quantity: 1,
-      }
+      { productId: id, quantity: 1 }
     );
-
-    triggerToast("Added to Cart", "CART");
+    refreshCart(); // ✅ update navbar badge
+    triggerToast("Added to cart!", "CART", "success");
   } catch (error) {
     console.error("Add to cart failed:", error);
-    triggerToast("Failed to add to cart", "ERROR");
+    triggerToast("Failed to add to cart", "ERROR", "error");
   }
 };
 
@@ -96,22 +97,30 @@ const handleAddToCart = async (e) => {
       className="group relative bg-white rounded-2xl p-6 shadow-xl flex flex-col cursor-pointer hover:-translate-y-1 transition-all duration-300 border border-transparent hover:border-emerald-100"
     >
       {showToast && (
-        <div className="absolute z-20 top-4 inset-x-4 bg-black text-white p-3 rounded-xl text-xs animate-bounce">
+        <div className={`absolute z-20 top-3 inset-x-3 flex items-center gap-2 px-4 py-3 rounded-2xl text-xs font-bold shadow-lg transition-all ${
+          toastType === "success" ? "bg-slate-900 text-white" : "bg-rose-600 text-white"
+        }`}>
+          {toastType === "success" ? (
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-teal-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            </svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          )}
           {toastMessage}
         </div>
       )}
 
-      {/* IMAGE (REPLACED INITIAL LETTER) */}
+      {/* IMAGE */}
       <div className="text-center mb-4">
-        <div className="w-20 h-20 mx-auto rounded-xl overflow-hidden bg-gray-100">
+        <div className="w-20 h-20 mx-auto rounded-xl overflow-hidden bg-slate-100">
           <img
             src={image}
             alt={name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-            onError={(e) => {
-              e.target.src =
-                "https://via.placeholder.com/150?text=Wellness";
-            }}
+            onError={(e) => { e.target.src = "https://placehold.co/150x150?text=🌿"; }}
           />
         </div>
 
@@ -136,9 +145,9 @@ const handleAddToCart = async (e) => {
         <div className="flex gap-3">
           <button
             onClick={handleAddToCart}
-            className="flex-1 py-2 rounded-xl border-2 border-gray-100 font-bold text-[10px] uppercase tracking-widest hover:bg-gray-50 transition-colors"
+            className="flex-1 py-2 rounded-xl border-2 border-slate-200 font-bold text-[10px] uppercase tracking-widest hover:bg-slate-50 hover:border-slate-400 transition-colors"
           >
-            + Cart
+            Add to Cart
           </button>
           <button
             onClick={handleBuyNow}

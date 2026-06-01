@@ -11,56 +11,33 @@ export default function Login() {
 
   const loginUser = async (e) => {
     e.preventDefault();
-
-    if (!email || !password) {
-      setError("Please enter both email and password");
-      return;
-    }
+    if (!email || !password) { setError("Please enter both email and password"); return; }
 
     setLoading(true);
     setError("");
 
     try {
-      // 1️⃣ LOGIN
       const res = await api.post("/auth/login", { email, password });
-
       const token = res.data?.accessToken;
-      const role = res.data?.role;
-
-      if (!token || !role) {
-        throw new Error("Invalid login response");
-      }
+      const role  = res.data?.role;
+      if (!token || !role) throw new Error("Invalid login response");
 
       localStorage.setItem("token", token);
-      localStorage.setItem("role", role);
+      localStorage.setItem("role",  role);
 
-      // 2️⃣ ADMIN
-      if (role === "ADMIN") {
-        navigate("/admin", { replace: true });
-        return;
-      }
+      if (role === "ADMIN") { navigate("/admin", { replace: true }); return; }
 
-      // 3️⃣ FETCH LOGGED-IN USER (SOURCE OF NAME & EMAIL)
       const userRes = await api.get("/users/me");
       const user = userRes.data;
-
       localStorage.setItem("user", JSON.stringify(user));
 
-      // 4️⃣ PRACTITIONER FLOW (🔥 FIX IS HERE)
       if (role === "PRACTITIONER") {
         try {
-          const practitionerRes = await api.get(
-            `/practitioners/user/${user.id}`
-          );
-
+          const practitionerRes = await api.get(`/practitioners/user/${user.id}`);
           const practitionerRaw = practitionerRes.data;
-
-          // ✅ BUILD COMPLETE PRACTITIONER OBJECT
           const practitioner = {
-            id: practitionerRaw.id,
-            userId: user.id,
-            name: user.name,
-            email: user.email,
+            id: practitionerRaw.id, userId: user.id,
+            name: user.name, email: user.email,
             specialization: practitionerRaw.specialization,
             bio: practitionerRaw.bio,
             clinicAddress: practitionerRaw.clinicAddress,
@@ -69,35 +46,17 @@ export default function Login() {
             certificateLink: practitionerRaw.certificateLink,
             rejectionReason: practitionerRaw.rejectionReason,
           };
-
-          localStorage.setItem(
-            "practitioner",
-            JSON.stringify(practitioner)
-          );
-
-          // ✅ VERIFIED PRACTITIONER
-          if (practitioner.verified === true) {
-            navigate("/practitioner/home", { replace: true });
-            return;
-          }
-
-          // ⛔ UNVERIFIED PRACTITIONER
+          localStorage.setItem("practitioner", JSON.stringify(practitioner));
+          navigate(practitioner.verified ? "/practitioner/home" : "/dashboard", { replace: true });
+        } catch {
           navigate("/dashboard", { replace: true });
-          return;
-
-        } catch (err) {
-          console.error("Practitioner fetch failed", err);
-          navigate("/dashboard", { replace: true });
-          return;
         }
+        return;
       }
 
-      // 5️⃣ NORMAL USER
       navigate("/home", { replace: true });
-
     } catch (err) {
-      console.error("LOGIN ERROR:", err.response?.data || err.message);
-      setError(err.response?.data?.message || "Login failed");
+      setError(err.response?.data?.message || "Login failed. Please check your credentials.");
     } finally {
       setLoading(false);
     }
@@ -105,61 +64,101 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex bg-white">
-      <div className="w-full lg:w-2/5 flex items-center justify-center p-6 bg-gradient-to-br from-cyan-50 to-blue-200">
-        <div className="w-full max-w-lg border-4 border-teal-400/70 shadow-2xl rounded-xl p-8 bg-white space-y-7">
-          <div className="text-center">
-            <h2 className="text-3xl font-extrabold">
-              Login to Wellnest 🧘‍♀️
-            </h2>
+
+      {/* ── LEFT: FORM PANEL ── */}
+      <div className="w-full lg:w-[42%] flex items-center justify-center p-8 bg-gradient-to-br from-slate-50 via-teal-50 to-cyan-100">
+        <div className="w-full max-w-md">
+
+          {/* Brand */}
+          <div className="flex items-center gap-3 mb-10">
+            <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white text-xl shadow-lg">
+              🌿
+            </div>
+            <span className="text-xl font-black tracking-tighter text-slate-900 uppercase italic">Wellnest</span>
           </div>
 
+          {/* Heading */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-1">Welcome back</h1>
+            <p className="text-sm text-slate-500">Sign in to continue your wellness journey.</p>
+          </div>
+
+          {/* Error */}
           {error && (
-            <div className="p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm">
+            <div className="mb-5 p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-sm flex items-start gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
               {error}
             </div>
           )}
 
+          {/* Form */}
           <form className="space-y-4" onSubmit={loginUser}>
-            <input
-              type="email"
-              placeholder="Email"
-              className="w-full px-4 py-3 rounded-lg border"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+            <div>
+              <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-1.5">Email</label>
+              <input
+                type="email"
+                placeholder="you@example.com"
+                autoComplete="email"
+                className="w-full px-4 py-3.5 rounded-2xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-all bg-white placeholder:text-slate-300"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
 
-            <input
-              type="password"
-              placeholder="Password"
-              className="w-full px-4 py-3 rounded-lg border"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div>
+              <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-1.5">Password</label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                autoComplete="current-password"
+                className="w-full px-4 py-3.5 rounded-2xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-all bg-white placeholder:text-slate-300"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-600 text-white font-bold"
+              className="w-full py-4 rounded-2xl bg-slate-900 text-white font-black text-sm uppercase tracking-widest hover:bg-slate-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-900/20 mt-2"
             >
-              {loading ? "Signing in..." : "Sign in"}
+              {loading ? (
+                <>
+                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Signing in…
+                </>
+              ) : "Sign In"}
             </button>
           </form>
 
-          <p className="text-center text-sm">
-            Don’t have an account?{" "}
-            <Link to="/signup" className="text-teal-600 font-bold">
+          <p className="text-center text-sm text-slate-500 mt-6">
+            Don't have an account?{" "}
+            <Link to="/signup" className="text-teal-600 font-black hover:underline underline-offset-2">
               Sign Up
             </Link>
           </p>
         </div>
       </div>
 
-      <div className="hidden lg:block lg:w-3/5">
+      {/* ── RIGHT: IMAGE PANEL ── */}
+      <div className="hidden lg:flex lg:flex-1 relative overflow-hidden">
         <img
-          src="https://images.unsplash.com/photo-1545205597-3d9d02c29597"
+          src="https://images.unsplash.com/photo-1545205597-3d9d02c29597?auto=format&fit=crop&w=1400&q=80"
           className="w-full h-full object-cover"
           alt="Wellness"
         />
+        {/* Overlay quote */}
+        <div className="absolute bottom-12 left-12 right-12 bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20">
+          <p className="text-white text-xl font-black italic leading-snug">
+            "Healing is not a destination,<br />it's a daily practice."
+          </p>
+          <p className="text-white/60 text-xs font-bold uppercase tracking-widest mt-3">Wellnest Philosophy</p>
+        </div>
       </div>
     </div>
   );
