@@ -92,7 +92,7 @@ export default function PractitionerProfile() {
   };
 
   return (
-    <>
+    <div className="min-h-screen bg-[#060F1E]">
       <PractitionerNavbar />
 
       <div className="mt-28 max-w-3xl mx-auto px-6 pb-20">
@@ -283,6 +283,6 @@ export default function PractitionerProfile() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
