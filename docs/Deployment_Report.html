@@ -141,7 +141,7 @@
                 <ul>
                     <li><strong>Web Layer:</strong> Nginx (Alpine) - High-performance static serving.</li>
                     <li><strong>App Layer:</strong> Java 17 Spring Boot - Robust API handling.</li>
-                    <li><strong>Data Layer:</strong> MySQL 8.0 - Persistent relational storage.</li>
+                    <li><strong>Data Layer:</strong> PostgreSQL 15 - Persistent relational storage.</li>
                 </ul>
             </div>
         </section>
@@ -209,7 +209,7 @@
                     <li>Select your repository. Render will detect <code>render.yaml</code>.</li>
                     <li>Approve the Blueprint to automatically provision:
                         <ul>
-                            <li><strong>Managed MySQL:</strong> Secure production database.</li>
+                            <li><strong>Managed PostgreSQL:</strong> Secure production database.</li>
                             <li><strong>Docker Web Service:</strong> High-performance Java backend.</li>
                         </ul>
                     </li>
@@ -223,9 +223,9 @@
 version: '3.8'
 services:
   db:
-    image: mysql:8.0
+    image: postgres:15-alpine
     environment:
-      MYSQL_DATABASE: wellness_db
+      POSTGRES_DB: wellness_db
   backend:
     build: ./backend
     depends_on: [db]

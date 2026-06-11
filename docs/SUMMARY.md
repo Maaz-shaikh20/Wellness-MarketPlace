@@ -79,7 +79,7 @@ User Registers ↓ Selects Role (Patient / Practitioner) ↓ Practitioner submit
 |----|------------|
 | Frontend | React with Tailwind for UI |
 | Backend | Spring Boot REST APIs |
-| Database | MySQL for persistence |
+| Database | PostgreSQL for persistence |
 | Auth | JWT-based security |
 
 ---

@@ -2,16 +2,17 @@ version: '3.8'
 
 services:
   db:
-    image: mysql:8.0
+    image: postgres:15-alpine
     container_name: wellness-db
     restart: always
     environment:
-      MYSQL_DATABASE: wellness_db
-      MYSQL_ROOT_PASSWORD: root
+      POSTGRES_DB: wellness_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      - db_data:/var/lib/mysql
+      - db_data:/var/lib/postgresql/data
 
   backend:
     build: ./backend
@@ -20,8 +21,8 @@ services:
     ports:
       - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/wellness_db?useSSL=false&allowPublicKeyRetrieval=true
-      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/wellness_db
+      SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: root
     depends_on:
       - db

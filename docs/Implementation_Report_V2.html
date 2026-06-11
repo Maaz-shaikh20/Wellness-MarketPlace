@@ -267,7 +267,7 @@ Implementation</h2>
 scalable REST API. - <strong>Spring Security</strong>: Handles
 authentication and prevents unauthorized access to sensitive endpoints.
 - <strong>Spring Data JPA</strong>: Simplifies database interactions
-with MySQL using ORM mapping. - <strong>Lombok</strong>: Reduces
+with PostgreSQL using ORM mapping. - <strong>Lombok</strong>: Reduces
 boilerplate code (Getters/Setters/Constructors).</p>
 <h3 id="frontend-react-vite">2.2 Frontend: React + Vite</h3>
 <ul>
@@ -302,7 +302,7 @@ system no longer waits for database writes on background tasks.</p>
 <h3 id="high-efficiency-caching-cacheable">3.2 High-Efficiency Caching
 (<code>@Cacheable</code>)</h3>
 <p>We implemented application-level caching to reduce the load on the
-MySQL database for frequently accessed but rarely changed data (e.g.,
+PostgreSQL database for frequently accessed but rarely changed data (e.g.,
 Practitioner Lists).</p>
 <p><strong>Key Cached Methods:</strong> - <code>getAll()</code>: Caches
 the full list of verified practitioners. - <code>getByUserId()</code>:
@@ -313,7 +313,7 @@ a new practitioner is verified, ensuring data consistency across all
 users.</p>
 <hr />
 <h2 id="database-data-management">4. Database &amp; Data Management</h2>
-<p>The system uses <strong>MySQL 8.x</strong> with a normalized
+<p>The system uses <strong>PostgreSQL 15</strong> with a normalized
 schema.</p>
 <h3 id="core-entities">4.1 Core Entities</h3>
 <ul>

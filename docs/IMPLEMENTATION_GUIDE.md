@@ -13,7 +13,7 @@ Ensure the following are installed on your system:
 - npm or yarn
 - Java JDK 17+
 - Maven
-- MySQL Server
+- PostgreSQL Server
 - Git
 
 ---
@@ -22,19 +22,22 @@ Ensure the following are installed on your system:
 Wellness-Marketplace-for-Alternative-Therapies-Group-A/ ├── backend/ ├── frontend/ ├── *.md (documentation files) └── docker-compose.yml
 ---
 
-## 🗄 Database Setup (MySQL)
+## 🗄 Database Setup (PostgreSQL)
 
-1. Open MySQL client
+1. Open PostgreSQL client (like psql or pgAdmin)
 2. Create database:
-   ```sql
-   CREATE DATABASE wellness_marketplace;
+   ```sql
+   CREATE DATABASE wellness_marketplace;
+   ```
 3. Update database credentials in:
-   backend/src/main/resources/application.properties
-    Example:
-spring.datasource.url=jdbc:mysql://localhost:3306/wellness_marketplace
-spring.datasource.username=root
-spring.datasource.password=your_password
-spring.jpa.hibernate.ddl-auto=update
+   `backend/src/main/resources/application.properties`
+   Example:
+   ```properties
+   spring.datasource.url=jdbc:postgresql://localhost:5432/wellness_marketplace
+   spring.datasource.username=postgres
+   spring.datasource.password=your_password
+   spring.jpa.hibernate.ddl-auto=update
+   ```
 
 ⚙ Backend Setup (Spring Boot)
 Navigate to backend folder:
@@ -96,7 +99,7 @@ JWT authentication works
 Admin verification works
 👉 Refer: IMPLEMENTATION_CHECKLIST.md
 🆘 Troubleshooting
-Database connection errors → Check MySQL credentials
+Database connection errors → Check PostgreSQL credentials
 CORS issues → Verify backend CORS configuration
 API errors → Check backend logs
 📘 Related Documentation

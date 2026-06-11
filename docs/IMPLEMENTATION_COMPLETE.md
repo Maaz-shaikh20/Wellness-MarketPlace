@@ -25,7 +25,7 @@ This document confirms that the **Wellness Marketplace for Alternative Therapies
 - Spring Boot REST APIs
 - Role-based authentication using JWT
 - Patient, Practitioner, and Admin modules
-- Database integration using MySQL
+- Database integration using PostgreSQL
 - Exception handling and validation
 
 ---
@@ -40,7 +40,7 @@ This document confirms that the **Wellness Marketplace for Alternative Therapies
 ---
 
 ### Database
-- MySQL schema auto-generated via JPA
+- PostgreSQL schema auto-generated via JPA
 - Proper entity relationships
 - Persistent storage for users and appointments
 

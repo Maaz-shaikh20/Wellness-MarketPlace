@@ -30,7 +30,7 @@ Spring Boot (Java)
 
 Database
 
-MySQL
+PostgreSQL
 
 Authentication
 

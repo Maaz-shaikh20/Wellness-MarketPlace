@@ -43,7 +43,7 @@ The application follows a **layered architecture** combined with **RESTful servi
 
 ## 🗄 Data Layer (Database)
 
-**Technology:** MySQL
+**Technology:** PostgreSQL
 
 ### Responsibilities:
 - Persistent storage
@@ -53,7 +53,7 @@ The application follows a **layered architecture** combined with **RESTful servi
 ---
 
 ## 🔄 Request Flow
-User Action ↓ React Frontend ↓ REST API Request ↓ Spring Boot Controllers ↓ Service Layer ↓ Repository Layer ↓ MySQL Database
+User Action ↓ React Frontend ↓ REST API Request ↓ Spring Boot Controllers ↓ Service Layer ↓ Repository Layer ↓ PostgreSQL Database
 ---
 
 ## 🔐 Security Architecture

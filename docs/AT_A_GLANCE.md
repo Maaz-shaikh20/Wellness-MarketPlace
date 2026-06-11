@@ -49,7 +49,7 @@ The platform ensures **trust, security, and scalability** through role-based acc
 |-----|-----------|
 | Frontend | React.js, Tailwind CSS |
 | Backend | Spring Boot (Java) |
-| Database | MySQL |
+| Database | PostgreSQL |
 | Auth | JWT (Role-based) |
 | APIs | REST |
 

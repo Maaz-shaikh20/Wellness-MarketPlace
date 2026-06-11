@@ -65,7 +65,7 @@ Alternative and complementary therapies (yoga, acupuncture, naturopathy, meditat
 The Wellness Marketplace is a standalone web application consisting of:
 - A **React.js** single-page frontend application
 - A **Spring Boot (Java)** RESTful backend
-- A **MySQL** relational database
+- A **PostgreSQL** relational database
 - JWT-based authentication and role-based access control
 
 ### 2.2 Product Functions (High-Level Summary)
@@ -82,7 +82,7 @@ The Wellness Marketplace is a standalone web application consisting of:
 ### 2.3 Operating Environment
 - **Client:** Any modern web browser (Chrome, Firefox, Edge, Safari)
 - **Server:** Java 17+, Spring Boot 3.x
-- **Database:** MySQL 8.x
+- **Database:** PostgreSQL 15
 - **Frontend Runtime:** Node.js 18+, Vite build tool
 - **Communication:** HTTPS REST APIs
 
@@ -391,7 +391,7 @@ The system follows a **three-tier layered architecture**:
           ↕  HTTPS / REST API
 [ Spring Boot Backend ]
           ↕  JPA / Hibernate
-[ MySQL Database ]
+[ PostgreSQL Database ]
 ```
 
 ### 6.2 Backend Package Structure
@@ -427,7 +427,7 @@ com.example.wellnessbackend/
 - Authentication: `Authorization: Bearer <JWT>` header.
 
 ### 7.3 Database Interface
-- Backend communicates with MySQL via **Spring Data JPA / Hibernate**.
+- Backend communicates with PostgreSQL via **Spring Data JPA / Hibernate**.
 - Schema is auto-managed via `spring.jpa.hibernate.ddl-auto`.
 
 ### 7.4 External APIs
@@ -495,7 +495,7 @@ com.example.wellnessbackend/
 |-----------|---------|
 | Spring Boot 3.x | Backend framework |
 | React 18.x | Frontend UI framework |
-| MySQL 8.x | Primary data store |
+| PostgreSQL 15 | Primary data store |
 | JWT (jjwt library) | Token-based authentication |
 | Tailwind CSS | UI styling |
 | Vite | Frontend build tool |

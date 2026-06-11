@@ -255,7 +255,7 @@
                 <div class="grid" style="grid-template-columns: repeat(3, 1fr);">
                     <div><strong>Frontend</strong><br>Nginx & React</div>
                     <div><strong>Backend</strong><br>Java 17 & Spring Boot</div>
-                    <div><strong>Storage</strong><br>MySQL 8.0 & Volumes</div>
+                    <div><strong>Storage</strong><br>PostgreSQL 15 & Volumes</div>
                 </div>
             </div>
 
@@ -265,12 +265,12 @@
 # docker-compose.yml Summary
 services:
   db:
-    image: mysql:8.0
+    image: postgres:15-alpine
     restart: always
   backend:
     build: ./backend
     environment:
-      - DB_URL=jdbc:mysql://db:3306/wellness
+      - DB_URL=jdbc:postgresql://db:5432/wellness
   frontend:
     build: ./frontend
     ports: ["80:80"]
@@ -284,7 +284,7 @@ services:
                 </div>
                 <div class="card">
                     <h3>Backend: Render</h3>
-                    <p>Uses <code>render.yaml</code> (Blueprints) to provision a managed MySQL database and a containerized backend service in one click.</p>
+                    <p>Uses <code>render.yaml</code> (Blueprints) to provision a managed PostgreSQL database and a containerized backend service in one click.</p>
                 </div>
             </div>
 

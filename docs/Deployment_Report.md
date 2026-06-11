@@ -16,7 +16,7 @@ The system follows a containerized microservices architecture:
 
 - **Frontend:** React (Vite) application served via Nginx.
 - **Backend:** Spring Boot (Java 17) REST API.
-- **Database:** MySQL 8.0 instance with persistent volume storage.
+- **Database:** PostgreSQL 15 instance with persistent volume storage.
 - **Orchestration:** Docker Compose for multi-container coordination.
 
 ---
@@ -50,7 +50,7 @@ Before execution, the following prerequisites must be met:
 | **Data Loss** | Critical | Automated daily snapshots of the `db_data` volume to S3. |
 | **Downtime** | High | Implement a Blue-Green deployment strategy using Nginx as a reverse proxy. |
 | **Security Breach** | Critical | Store secrets in environment variables (not in code). Use a private network for the database container. |
-| **Compatibility** | Medium | Use specific version tags (e.g., `mysql:8.0`) instead of `latest` to ensure consistency. |
+| **Compatibility** | Medium | Use specific version tags (e.g., `postgres:15-alpine`) instead of `latest` to ensure consistency. |
 
 **Rollback Procedure:** In case of deployment failure, use `docker-compose down` followed by `docker checkout <previous_stable_tag>` and `docker-compose up -d` to restore the last known working state.
 
@@ -73,7 +73,7 @@ The deployment process involves coordination with the following stakeholders:
 
 ### Backend: Render
 - **Blueprint:** Automatic deployment via `render.yaml`.
-- **Services:** Provisions a Managed MySQL instance and a Docker-based Web Service for the Java backend.
+- **Services:** Provisions a Managed PostgreSQL instance and a Docker-based Web Service for the Java backend.
 
 ---
 

@@ -34,7 +34,7 @@ The implementation strictly adheres to the designs outlined in the SRS and Desig
 ### 2.1 Backend: Spring Boot (Java 17)
 The backend leverages the Spring ecosystem to provide a secure and scalable REST API.
 -   **Spring Security**: Handles authentication and prevents unauthorized access to sensitive endpoints.
--   **Spring Data JPA**: Simplifies database interactions with MySQL using ORM mapping.
+-   **Spring Data JPA**: Simplifies database interactions with PostgreSQL using ORM mapping.
 -   **Lombok**: Reduces boilerplate code (Getters/Setters/Constructors).
 
 ### 2.2 Frontend: React + Vite
@@ -66,7 +66,7 @@ public void createNotification(Long userId, String type, String message) {
 <!-- slide -->
 
 ### 3.2 High-Efficiency Caching (`@Cacheable`)
-We implemented application-level caching to reduce the load on the MySQL database for frequently accessed but rarely changed data (e.g., Practitioner Lists).
+We implemented application-level caching to reduce the load on the PostgreSQL database for frequently accessed but rarely changed data (e.g., Practitioner Lists).
 
 **Key Cached Methods:**
 -   `getAll()`: Caches the full list of verified practitioners.
@@ -78,7 +78,7 @@ The cache is automatically invalidated (`@CacheEvict`) whenever a profile is upd
 ---
 
 ## 4. Database & Data Management
-The system uses **MySQL 8.x** with a normalized schema.
+The system uses **PostgreSQL 15** with a normalized schema.
 
 ### 4.1 Core Entities
 -   **User**: Handles base authentication and roles.
