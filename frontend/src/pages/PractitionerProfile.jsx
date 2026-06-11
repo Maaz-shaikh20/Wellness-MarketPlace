@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import PractitionerNavbar from "../components/PractitionerNavbar";
 import api from "../api/axios";
 import { Pencil, Save, X, MapPin, Stethoscope, FileText, Star, CheckCircle, Clock } from "lucide-react";
@@ -92,7 +92,7 @@ export default function PractitionerProfile() {
   };
 
   return (
-    <div className="min-h-screen bg-[#060F1E]">
+    <>
       <PractitionerNavbar />
 
       <div className="mt-28 max-w-3xl mx-auto px-6 pb-20">
@@ -141,7 +141,7 @@ export default function PractitionerProfile() {
                   : "bg-yellow-400 text-yellow-900"
               }`}
             >
-              {practitioner.verified ? "✓ Verified" : "⏳ Pending"}
+              {practitioner.verified ? "Γ£ô Verified" : "ΓÅ│ Pending"}
             </span>
           </div>
 
@@ -166,7 +166,7 @@ export default function PractitionerProfile() {
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wider text-indigo-400 mb-1">Clinic Address</p>
                     <p className="font-semibold text-[#1B3C53] text-base">
-                      {practitioner.clinicAddress || <span className="text-gray-400 italic font-normal">No address provided — click Edit Profile to add</span>}
+                      {practitioner.clinicAddress || <span className="text-gray-400 italic font-normal">No address provided ΓÇö click Edit Profile to add</span>}
                     </p>
                   </div>
                 </div>
@@ -283,6 +283,6 @@ export default function PractitionerProfile() {
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
