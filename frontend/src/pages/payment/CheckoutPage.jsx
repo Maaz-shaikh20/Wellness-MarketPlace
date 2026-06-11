@@ -17,7 +17,7 @@ const fromCart = location.state?.fromCart === true;
 
 const [cartItems, setCartItems] = useState([]);
 const [loadingCart, setLoadingCart] = useState(false);
-
+const [buyNowQuantity, setBuyNowQuantity] = useState(1); // ✅ Dynamic quantity state for Buy Now
 
   // ✅ New state for delivery details
   const [deliveryAddress, setDeliveryAddress] = useState("");
@@ -98,7 +98,7 @@ if (!phoneNumber || phoneNumber.length < 10) {
       {
         itemType: "PRODUCT",
         itemId: product.id,
-        quantity: 1,
+        quantity: buyNowQuantity, // ✅ Dynamic quantity
         unitPrice: product.price,
       },
     ],
@@ -182,14 +182,28 @@ if (!phoneNumber || phoneNumber.length < 10) {
       <span className="font-semibold">₹{product.price}</span>
     </div>
 
-    <div className="flex justify-between text-sm">
+    <div className="flex justify-between items-center text-sm">
       <span className="text-slate-600">Quantity</span>
-      <span className="font-semibold">1</span>
+      <div className="flex items-center gap-2 bg-slate-100 px-2 py-1 rounded-xl">
+        <button
+          onClick={() => setBuyNowQuantity(Math.max(1, buyNowQuantity - 1))}
+          className="w-5 h-5 rounded bg-white flex items-center justify-center font-bold text-slate-600 border border-slate-200 hover:bg-slate-50 transition"
+        >
+          -
+        </button>
+        <span className="font-semibold text-slate-800 text-xs w-4 text-center">{buyNowQuantity}</span>
+        <button
+          onClick={() => setBuyNowQuantity(buyNowQuantity + 1)}
+          className="w-5 h-5 rounded bg-white flex items-center justify-center font-bold text-slate-600 border border-slate-200 hover:bg-slate-50 transition"
+        >
+          +
+        </button>
+      </div>
     </div>
 
     <div className="border-t pt-4 flex justify-between text-base font-bold">
       <span>Total</span>
-      <span>₹{product.price}</span>
+      <span>₹{(product.price * buyNowQuantity).toFixed(2)}</span>
     </div>
   </>
 )}
