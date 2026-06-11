@@ -11,6 +11,7 @@ import com.example.wellnessbackend.repository.CartRepository;
 import com.example.wellnessbackend.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -21,7 +22,8 @@ public class CartService {
     private final CartRepository cartRepository;
     private final ProductRepository productRepository;
 
-    // CREATE → Add product to cart
+    // CREATE → Add product to cart (merge if same product already in cart)
+    @Transactional
     public void addToCart(Long userId, AddToCartDto dto) {
 
         Product product = productRepository.findById(dto.getProductId())
@@ -32,7 +34,7 @@ public class CartService {
         }
 
         Cart cartItem = cartRepository
-                .findByUserIdAndProduct_Id(userId, dto.getProductId())
+                .findFirstByUserIdAndProduct_Id(userId, dto.getProductId())
                 .orElse(
                         Cart.builder()
                                 .userId(userId)
@@ -68,20 +70,19 @@ public class CartService {
     public void clearCart(Long userId) {
         cartRepository.deleteByUserId(userId);
     }
-    // READ → Get cart items (DTO for frontend)
-    // READ → Get cart items (DTO for frontend)
+
+    // READ → Get cart items as DTO for frontend
     public List<CartResponseDto> getUserCartDto(Long userId) {
         return cartRepository.findByUserId(userId).stream()
                 .map(cart -> CartResponseDto.builder()
                         .cartItemId(cart.getId())
                         .productId(cart.getProduct().getId())
                         .productName(cart.getProduct().getName())
-                        .price(BigDecimal.valueOf(cart.getProduct().getPrice())) // ✅ FIX
+                        .price(BigDecimal.valueOf(cart.getProduct().getPrice()))
                         .quantity(cart.getQuantity())
                         .build()
                 )
                 .collect(Collectors.toList());
     }
-
 
 }

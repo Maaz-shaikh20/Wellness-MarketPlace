@@ -4,7 +4,10 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "cart_items")
+@Table(
+    name = "cart_items",
+    uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "product_id"})
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -17,7 +20,7 @@ public class Cart {
     private Long id;
 
     // Logged-in user id (no User entity change)
-    @Column(nullable = false)
+    @Column(name = "user_id", nullable = false)
     private Long userId;
 
     // Product reference
