@@ -1,4 +1,4 @@
-🌿 Wellness Marketplace for Alternative Therapies – Group A
+🌿 Wellness Marketplace for Alternative Therapies 
 
 📚 Complete Full-Stack Implementation & Documentation
 
