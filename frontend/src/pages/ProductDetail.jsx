@@ -95,7 +95,7 @@ export default function ProductDetail() {
   const rating =
     reviews.length > 0
       ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
-      : 4.4;
+      : null;
 
   /* -------- fetch reviews -------- */
   useEffect(() => {
@@ -256,7 +256,7 @@ export default function ProductDetail() {
             </div>
 
             <p className="text-sm text-slate-500">
-              ★ {rating} · {reviews.length} reviews
+              {rating ? `★ ${rating} · ${reviews.length} reviews` : "No reviews yet"}
             </p>
           </div>
 
@@ -344,7 +344,7 @@ export default function ProductDetail() {
         <section className="mt-14 max-w-4xl">
           <h2 className="text-2xl font-bold mb-2">Reviews</h2>
           <p className="text-slate-500 mb-6">
-            ★ {rating} based on {reviews.length} customer reviews
+            {rating ? `★ ${rating} based on ${reviews.length} customer reviews` : "Be the first to leave a review."}
           </p>
 
           {loading ? (

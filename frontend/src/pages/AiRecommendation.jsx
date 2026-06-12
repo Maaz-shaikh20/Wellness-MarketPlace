@@ -2,6 +2,32 @@ import React, { useState, useEffect } from "react";
 import api from "../api/axios";
 import Navbar from "../components/Navbar";
 
+/* ---- Confirm Modal ---- */
+function ConfirmModal({ message, onConfirm, onCancel }) {
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[300] flex items-center justify-center p-4">
+      <div className="bg-white rounded-[2.5rem] p-10 max-w-sm w-full shadow-2xl">
+        <h3 className="text-xl font-black text-slate-900 mb-3">Are you sure?</h3>
+        <p className="text-sm text-slate-500 mb-8 leading-relaxed">{message}</p>
+        <div className="flex gap-3">
+          <button
+            onClick={onCancel}
+            className="flex-1 py-3 rounded-2xl border-2 border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50 transition-all"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 py-3 rounded-2xl bg-rose-600 text-white font-bold text-sm hover:bg-rose-700 transition-all"
+          >
+            Clear All
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AiRecommendation() {
   const [symptom, setSymptom] = useState("");
   const [history, setHistory] = useState([]);
@@ -11,7 +37,8 @@ export default function AiRecommendation() {
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState("");
   const [clearingAll, setClearingAll] = useState(false);
-  const [deletingId, setDeletingId] = useState(null); // track which item is being deleted
+  const [deletingId, setDeletingId] = useState(null);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const user = JSON.parse(localStorage.getItem("user")) || { id: 1, name: "User" };
 
@@ -73,8 +100,8 @@ export default function AiRecommendation() {
   };
 
   const handleClearAll = async () => {
-    if (!window.confirm("Clear all your past recommendations? This cannot be undone.")) return;
     setClearingAll(true);
+    setShowClearConfirm(false);
     try {
       await api.delete(`/recommendations/user/${user.id}/all`);
       setHistory([]);
@@ -87,6 +114,13 @@ export default function AiRecommendation() {
 
   return (
     <div className="min-h-screen bg-white text-slate-900 selection:bg-emerald-100">
+      {showClearConfirm && (
+        <ConfirmModal
+          message="This will permanently delete all your past wellness recommendations. This action cannot be undone."
+          onConfirm={handleClearAll}
+          onCancel={() => setShowClearConfirm(false)}
+        />
+      )}
       <Navbar user={user} />
 
       <main className="pt-32 pb-20 px-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-16">
@@ -99,7 +133,7 @@ export default function AiRecommendation() {
               <span className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-600">Active_Neural_Engine</span>
             </div>
             <h1 className="text-6xl font-black italic uppercase tracking-tighter mb-8">
-              Symptom_<span className="text-slate-300">Analysis</span>
+              Symptom <span className="text-slate-300">Analysis</span>
             </h1>
 
             <form onSubmit={handleAnalyze} className="relative group">
@@ -131,7 +165,7 @@ export default function AiRecommendation() {
           <section className="space-y-6">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
-                Previous_Clinical_Insights
+                Past Wellness Insights
                 {history.length > 0 && (
                   <span className="ml-3 px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full text-[9px]">
                     {history.length}
@@ -141,7 +175,7 @@ export default function AiRecommendation() {
 
               {history.length > 0 && (
                 <button
-                  onClick={handleClearAll}
+                  onClick={() => setShowClearConfirm(true)}
                   disabled={clearingAll}
                   className="flex items-center gap-2 px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-rose-500 border border-rose-200 hover:bg-rose-50 transition-all disabled:opacity-50"
                 >
@@ -192,12 +226,43 @@ export default function AiRecommendation() {
                   </div>
 
                   <h4 className="text-3xl font-black text-slate-900 mb-4 tracking-tight leading-tight">
-                    "{rec.symptom}"
+                    &ldquo;{rec.symptom}&rdquo;
                   </h4>
-                  <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
-                    <p className="text-[10px] font-black uppercase text-emerald-600 mb-1">Recommended Therapy</p>
-                    <p className="text-xl font-bold text-slate-800">{rec.suggestedTherapy}</p>
-                  </div>
+
+                  {/* Urgent symptom warning banner */}
+                  {(() => {
+                    const urgent = ["chest pain", "chest tightness", "heart", "palpitation", "shortness of breath", "breathlessness"];
+                    const isUrgent = urgent.some(k => rec.symptom.toLowerCase().includes(k));
+                    return isUrgent ? (
+                      <div className="flex items-start gap-3 mb-4 p-4 bg-rose-50 border border-rose-200 rounded-2xl">
+                        <span className="text-rose-500 text-lg leading-none mt-0.5">⚠️</span>
+                        <p className="text-rose-700 text-xs font-bold leading-relaxed">
+                          Chest-related symptoms may require urgent medical attention. Please consult a qualified physician alongside any alternative therapy.
+                        </p>
+                      </div>
+                    ) : null;
+                  })()}
+
+                  {/* Therapy recommendation — split on '—' to separate advice from safety note */}
+                  {(() => {
+                    const parts = rec.suggestedTherapy.split("—");
+                    const therapy = parts[0].trim();
+                    const safetyNote = parts[1]?.trim();
+                    return (
+                      <div className="space-y-3">
+                        <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                          <p className="text-[10px] font-black uppercase text-emerald-600 mb-2">Recommended Therapy</p>
+                          <p className="text-xl font-bold text-slate-800 leading-snug">{therapy}</p>
+                        </div>
+                        {safetyNote && (
+                          <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100">
+                            <p className="text-[10px] font-black uppercase text-amber-600 mb-1">Clinical Note</p>
+                            <p className="text-sm font-medium text-amber-800">{safetyNote}</p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               ))}
 

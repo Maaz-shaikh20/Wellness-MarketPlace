@@ -7,7 +7,6 @@ import {
   ShieldCheck,
   Award,
   Info,
-  Globe,
   ArrowLeft,
   XCircle,
   Clock
@@ -140,14 +139,14 @@ export default function ViewProfile() {
               )}
             </div>
 
-            <p className="text-sm font-bold opacity-60 tracking-wider">
-              NETWORK_ID: {userId?.substring(0, 8)}...
+            <p className="text-sm font-medium opacity-60">
+              Member since joining Wellnest
             </p>
 
-            <div className="flex items-center gap-2 opacity-50">
-              <Globe size={14} />
-              <span className="text-[10px] font-black uppercase tracking-widest">
-                Active Node
+            <div className="flex items-center gap-2 opacity-60">
+              <ShieldCheck size={14} className="text-emerald-500" />
+              <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-600">
+                Verified Account
               </span>
             </div>
           </div>
@@ -161,16 +160,16 @@ export default function ViewProfile() {
             <div className="flex items-center gap-3 border-b pb-4">
               <Info size={18} className="text-blue-500" />
               <h2 className="text-sm font-black uppercase tracking-[0.3em]">
-                Core Credentials
+                Account Information
               </h2>
             </div>
 
-            <p className="font-bold italic uppercase flex items-center gap-2">
-              <User size={14} /> {user.email}
+            <p className="font-bold flex items-center gap-2 text-slate-700">
+              <User size={14} className="text-slate-400" /> {user.email}
             </p>
 
-            <p className="font-bold italic uppercase flex items-center gap-2">
-              <ShieldCheck size={14} /> ACCOUNT ACTIVE
+            <p className="font-bold flex items-center gap-2 text-emerald-600">
+              <ShieldCheck size={14} /> Account Active
             </p>
           </section>
 

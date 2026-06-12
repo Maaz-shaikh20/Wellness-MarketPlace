@@ -3,9 +3,7 @@ import {
   Routes,
   Route,
   Navigate,
-  useLocation,
 } from "react-router-dom";
-import { useEffect } from "react";
 import { CartProvider } from "./context/CartContext";
 
 /* ========= AUTH & USER ========= */
@@ -41,8 +39,7 @@ import PractitionerSessions from "./pages/PractitionerSessions";
 import PractitionerCommunity from "./pages/PractitionerCommunity";
 import PractitionerProfile from "./pages/PractitionerProfile";
 
-
-/* 🔥 PRODUCT FILE NAMES (FIXED) */
+/* ========= PRODUCT MANAGEMENT ========= */
 import ManageProduct from "./pages/ManageProduct";
 import CreateProduct from "./pages/CreateProduct";
 import EditProduct from "./pages/EditProduct";
@@ -52,117 +49,87 @@ import PrivateRoute from "./routes/PrivateRoute";
 import AdminRoute from "./routes/AdminRoute";
 import PractitionerRoute from "./routes/PractitionerRoute";
 
-
-
-/* ========= ROUTE LOGGER ========= */
-function RouteLogger() {
-  const location = useLocation();
-  useEffect(() => {
-    console.log("📍 Route changed to:", location.pathname);
-  }, [location]);
-  return null;
+/* ========= 404 PAGE ========= */
+function NotFound() {
+  return (
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center text-slate-900 px-6">
+      <div className="text-center max-w-md">
+        <div className="w-20 h-20 rounded-3xl bg-slate-900 flex items-center justify-center text-4xl mx-auto mb-8 shadow-2xl">
+          🌿
+        </div>
+        <h1 className="text-8xl font-black tracking-tighter text-slate-900 mb-4">404</h1>
+        <p className="text-slate-500 font-medium text-lg mb-8">
+          This page doesn&apos;t exist in your wellness journey.
+        </p>
+        <a
+          href="/home"
+          className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-slate-900 text-white font-black text-xs uppercase tracking-widest hover:bg-slate-700 transition-all shadow-lg"
+        >
+          Return Home
+        </a>
+      </div>
+    </div>
+  );
 }
 
 export default function App() {
   return (
     <CartProvider>
-    <Router>
-      <RouteLogger />
+      <Router>
+        <Routes>
+          {/* ========= ROOT ========= */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
 
-      <Routes>
-        {/* ========= ROOT ========= */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+          {/* ========= PUBLIC ========= */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/product/:id" element={<ProductDetail />} />
 
-        {/* ========= PUBLIC ========= */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
+          {/* ========= USER (PROTECTED) ========= */}
+          <Route path="/home" element={<PrivateRoute><Home /></PrivateRoute>} />
+          <Route path="/products" element={<PrivateRoute><Products /></PrivateRoute>} />
+          <Route path="/community" element={<PrivateRoute><Community /></PrivateRoute>} />
+          <Route path="/ai-recommendation" element={<PrivateRoute><AiRecommendation /></PrivateRoute>} />
+          <Route path="/notifications" element={<PrivateRoute><Notifications /></PrivateRoute>} />
+          <Route path="/activity" element={<PrivateRoute><Activity /></PrivateRoute>} />
+          <Route path="/my-sessions" element={<PrivateRoute><MySessions /></PrivateRoute>} />
+          <Route path="/book-therapy" element={<PrivateRoute><BookTherapy /></PrivateRoute>} />
+          <Route path="/book-session/:id" element={<PrivateRoute><BookSession /></PrivateRoute>} />
+          <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+          <Route path="/profile/:id" element={<PrivateRoute><ViewProfile /></PrivateRoute>} />
 
-        {/* 🔥 MODIFIED: Product Detail is now PUBLIC and uses dynamic :id.
-            This allows users to see the product even if they aren't logged in.
-        */}
-        <Route path="/product/:id" element={<ProductDetail />} />
+          {/* ========= PAYMENT ========= */}
+          <Route path="/checkout" element={<PrivateRoute><CheckoutPage /></PrivateRoute>} />
+          <Route path="/payment-method" element={<PrivateRoute><PaymentMethodPage /></PrivateRoute>} />
+          <Route path="/payment-result" element={<PrivateRoute><PaymentResultPage /></PrivateRoute>} />
 
-        {/* ========= USER (PROTECTED) ========= */}
-        <Route path="/home" element={<PrivateRoute><Home /></PrivateRoute>} />
-        <Route path="/products" element={<PrivateRoute><Products /></PrivateRoute>} />
-        <Route path="/community" element={<PrivateRoute><Community /></PrivateRoute>} />
-        <Route path="/ai-recommendation" element={<PrivateRoute><AiRecommendation /></PrivateRoute>} />
-        <Route path="/notifications" element={<PrivateRoute><Notifications /></PrivateRoute>} />
-        <Route path="/activity" element={<PrivateRoute><Activity /></PrivateRoute>} />
-        <Route path="/my-sessions" element={<PrivateRoute><MySessions /></PrivateRoute>} />
-        <Route path="/book-therapy" element={<PrivateRoute><BookTherapy /></PrivateRoute>} />
-        <Route path="/book-session/:id" element={<PrivateRoute><BookSession /></PrivateRoute>} />
-        <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-        <Route path="/profile/:id" element={<PrivateRoute><ViewProfile /></PrivateRoute>} />
+          {/* ========= ADMIN ========= */}
+          <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
 
-        {/* ========= PAYMENT ========= */}
-        <Route path="/checkout" element={<PrivateRoute><CheckoutPage /></PrivateRoute>} />
-        <Route path="/payment-method" element={<PrivateRoute><PaymentMethodPage /></PrivateRoute>} />
-        <Route path="/payment-result" element={<PrivateRoute><PaymentResultPage /></PrivateRoute>} />
+          {/* ========= PRACTITIONER ========= */}
+          <Route path="/practitioner/home" element={<PractitionerRoute><PractitionerHome /></PractitionerRoute>} />
+          <Route path="/practitioner/profile" element={<PractitionerRoute><PractitionerProfile /></PractitionerRoute>} />
 
-        {/* ========= ADMIN ========= */}
-        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+          {/* Therapies */}
+          <Route path="/practitioner/therapies" element={<PractitionerRoute><ManageTherapies /></PractitionerRoute>} />
+          <Route path="/practitioner/therapies/create" element={<PractitionerRoute><CreateTherapy /></PractitionerRoute>} />
+          <Route path="/practitioner/therapies/edit/:id" element={<PractitionerRoute><EditTherapy /></PractitionerRoute>} />
 
-        {/* ========= PRACTITIONER ========= */}
-        <Route
-          path="/practitioner/home"
-          element={<PractitionerRoute><PractitionerHome /></PractitionerRoute>}
-        />
+          {/* Sessions */}
+          <Route path="/practitioner/sessions" element={<PractitionerRoute><PractitionerSessions /></PractitionerRoute>} />
 
-        <Route
-          path="/practitioner/profile"
-          element={
-            <PractitionerRoute>
-              <PractitionerProfile />
-            </PractitionerRoute>}
-        />
+          {/* Community */}
+          <Route path="/practitioner/community" element={<PractitionerRoute><PractitionerCommunity /></PractitionerRoute>} />
 
+          {/* Products */}
+          <Route path="/practitioner/products" element={<PractitionerRoute><ManageProduct /></PractitionerRoute>} />
+          <Route path="/practitioner/products/create" element={<PractitionerRoute><CreateProduct /></PractitionerRoute>} />
+          <Route path="/practitioner/products/edit/:id" element={<PractitionerRoute><EditProduct /></PractitionerRoute>} />
 
-        {/* Therapies */}
-        <Route
-          path="/practitioner/therapies"
-          element={<PractitionerRoute><ManageTherapies /></PractitionerRoute>}
-        />
-        <Route
-          path="/practitioner/therapies/create"
-          element={<PractitionerRoute><CreateTherapy /></PractitionerRoute>}
-        />
-        <Route
-          path="/practitioner/therapies/edit/:id"
-          element={<PractitionerRoute><EditTherapy /></PractitionerRoute>}
-        />
-
-        {/* Sessions */}
-        <Route
-          path="/practitioner/sessions"
-          element={<PractitionerRoute><PractitionerSessions /></PractitionerRoute>}
-        />
-
-        {/* Community (PRACTITIONER SIDE) */}
-        <Route
-          path="/practitioner/community"
-          element={<PractitionerRoute><PractitionerCommunity /></PractitionerRoute>}
-        />
-
-        {/* Products */}
-        <Route
-          path="/practitioner/products"
-          element={<PractitionerRoute><ManageProduct /></PractitionerRoute>}
-        />
-        <Route
-          path="/practitioner/products/create"
-          element={<PractitionerRoute><CreateProduct /></PractitionerRoute>}
-        />
-        <Route
-          path="/practitioner/products/edit/:id"
-          element={<PractitionerRoute><EditProduct /></PractitionerRoute>}
-        />
-
-        {/* ========= FALLBACK ========= */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-
-    </Router>
+          {/* ========= 404 FALLBACK ========= */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Router>
     </CartProvider>
   );
 }

@@ -1,12 +1,23 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
+import {
+  User,
+  FileText,
+  MapPin,
+  ChevronRight,
+  CheckCircle,
+  Upload,
+  X,
+  Loader2,
+  Stethoscope,
+} from "lucide-react";
 
 const specializationsOptions = [
-  "physiotherapy",
-  "acupuncture",
-  "ayurveda",
-  "chiropractic",
+  { value: "physiotherapy", label: "Physiotherapy", icon: "🦴" },
+  { value: "acupuncture", label: "Acupuncture", icon: "🪡" },
+  { value: "ayurveda", label: "Ayurveda", icon: "🌿" },
+  { value: "chiropractic", label: "Chiropractic", icon: "🧘" },
 ];
 
 export default function Dashboard() {
@@ -16,20 +27,18 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   const [bio, setBio] = useState("");
-  const [specialization, setSpecialization] = useState(
-    specializationsOptions[0]
-  );
+  const [specialization, setSpecialization] = useState(specializationsOptions[0].value);
   const [clinicAddress, setClinicAddress] = useState("");
 
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
 
-  /* ===== Upload Certificate States ===== */
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [driveLink, setDriveLink] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const [uploadSuccess, setUploadSuccess] = useState("");
 
   /* ================= FETCH USER ================= */
   useEffect(() => {
@@ -43,20 +52,14 @@ export default function Dashboard() {
       try {
         const res = await api.get("/users/me");
         const userData = res.data;
-
         setUser(userData);
         setBio(userData.bio || "");
 
         if (userData.role === "PRACTITIONER") {
-          const practitionerRes = await api.get(
-            `/practitioners/user/${userData.id}`
-          );
-
+          const practitionerRes = await api.get(`/practitioners/user/${userData.id}`);
           const practitionerData = practitionerRes.data;
           setBio(practitionerData.bio || "");
-          setSpecialization(
-            practitionerData.specialization || specializationsOptions[0]
-          );
+          setSpecialization(practitionerData.specialization || specializationsOptions[0].value);
           setClinicAddress(practitionerData.clinicAddress || "");
         }
       } catch (err) {
@@ -71,10 +74,9 @@ export default function Dashboard() {
     fetchUser();
   }, [navigate]);
 
-  /* ================= HELPERS ================= */
-  const showSuccessPopup = (msg) => {
+  const showSuccess = (msg) => {
     setSuccessMsg(msg);
-    setTimeout(() => setSuccessMsg(""), 3000);
+    setTimeout(() => setSuccessMsg(""), 3500);
   };
 
   /* ================= SUBMITS ================= */
@@ -82,13 +84,12 @@ export default function Dashboard() {
     e.preventDefault();
     setError("");
     setSaving(true);
-
     try {
       await api.put(`/users/${user.id}`, { bio });
-      showSuccessPopup("Profile updated successfully!");
-      setTimeout(() => navigate("/home"), 1000);
+      showSuccess("Profile updated successfully!");
+      setTimeout(() => navigate("/home"), 1200);
     } catch (err) {
-      setError(err.response?.data?.message || "Could not save patient profile.");
+      setError(err.response?.data?.message || "Could not save profile.");
     } finally {
       setSaving(false);
     }
@@ -98,59 +99,50 @@ export default function Dashboard() {
     e.preventDefault();
     setError("");
     setSaving(true);
-
     try {
-      await api.put(`/practitioners/user/${user.id}`, {
-        bio,
-        specialization,
-        clinicAddress,
-      });
-
-      showSuccessPopup("Profile updated successfully!");
-      setTimeout(() => navigate("/home"), 1000);
+      await api.put(`/practitioners/user/${user.id}`, { bio, specialization, clinicAddress });
+      showSuccess("Profile updated successfully!");
+      setTimeout(() => navigate("/practitioner/home"), 1200);
     } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          "Could not save practitioner profile."
-      );
+      setError(err.response?.data?.message || "Could not save practitioner profile.");
     } finally {
       setSaving(false);
     }
   };
 
-  /* ================= UPLOAD CERTIFICATE ================= */
+  /* ================= CERTIFICATE UPLOAD ================= */
   const handleCertificateUpload = async () => {
     if (!driveLink.trim()) {
-      setUploadError("Please paste a valid Google Drive link");
+      setUploadError("Please paste a valid Google Drive link.");
       return;
     }
-
     setUploading(true);
     setUploadError("");
-
     try {
-      const res = await api.post(
-        `/practitioners/user/${user.id}/upload-certificate`,
-        { driveLink }
-      );
-
-      showSuccessPopup(res.data.message || "Documents submitted successfully");
-      setShowUploadModal(false);
-      setDriveLink("");
+      const res = await api.post(`/practitioners/user/${user.id}/upload-certificate`, {
+        driveLink,
+      });
+      setUploadSuccess(res.data.message || "Documents submitted for review!");
+      setTimeout(() => {
+        setShowUploadModal(false);
+        setDriveLink("");
+        setUploadSuccess("");
+      }, 2000);
     } catch (err) {
-      setUploadError(
-        err.response?.data?.message || "Failed to upload documents"
-      );
+      setUploadError(err.response?.data?.message || "Failed to upload documents.");
     } finally {
       setUploading(false);
     }
   };
 
-  /* ================= UI ================= */
+  /* ================= LOADING ================= */
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center text-lg">
-        Loading...
+      <div className="h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 to-teal-50">
+        <div className="w-12 h-12 border-4 border-slate-900 border-t-transparent rounded-full animate-spin mb-5" />
+        <p className="text-xs font-black uppercase tracking-[0.3em] text-slate-500">
+          Setting up your space…
+        </p>
       </div>
     );
   }
@@ -158,158 +150,340 @@ export default function Dashboard() {
   if (!user) return null;
 
   const { name, email, role } = user;
+  const isPractitioner = role === "PRACTITIONER";
 
   return (
     <div className="min-h-screen flex bg-white relative">
-      {/* SUCCESS POPUP */}
+      {/* Success toast */}
       {successMsg && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-teal-500 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-3 bg-emerald-600 text-white px-6 py-3.5 rounded-2xl shadow-2xl text-sm font-semibold animate-in fade-in slide-in-from-top-4 duration-300">
+          <CheckCircle size={16} />
           {successMsg}
         </div>
       )}
 
-      {/* FORM */}
-      <div className="w-full lg:w-2/5 flex items-center justify-center p-6 bg-gradient-to-br from-cyan-50 to-blue-200">
-        <form
-          onSubmit={
-            role === "PATIENT"
-              ? handlePatientSubmit
-              : handlePractitionerSubmit
-          }
-          className="w-full max-w-lg border-4 border-teal-400 shadow-2xl rounded-xl p-8 bg-white space-y-6"
-        >
-          <h2 className="text-2xl font-extrabold text-center">
-            Complete Your Profile
-          </h2>
+      {/* ── LEFT: FORM PANEL ── */}
+      <div className="w-full lg:w-[45%] flex items-center justify-center p-8 bg-gradient-to-br from-slate-50 via-teal-50 to-cyan-100 overflow-y-auto">
+        <div className="w-full max-w-md py-10">
 
+          {/* Brand */}
+          <div className="flex items-center gap-3 mb-10">
+            <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white text-xl shadow-lg">
+              🌿
+            </div>
+            <span className="text-xl font-black tracking-tighter text-slate-900 uppercase italic">
+              Wellnest
+            </span>
+          </div>
+
+          {/* Heading */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-1">
+              Complete your profile
+            </h1>
+            <p className="text-sm text-slate-500">
+              {isPractitioner
+                ? "Set up your practitioner profile to start accepting bookings."
+                : "Tell us a bit about yourself to personalize your experience."}
+            </p>
+          </div>
+
+          {/* Error */}
           {error && (
-            <div className="p-2 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm rounded">
+            <div className="mb-5 p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-sm flex items-start gap-2">
+              <X size={14} className="mt-0.5 shrink-0" />
               {error}
             </div>
           )}
 
-          {/* USER INFO */}
-          <div>
-            <label className="text-xs font-medium">Full Name</label>
-            <input readOnly value={name} className="w-full px-3 py-2 rounded bg-slate-200" />
-          </div>
+          <form
+            onSubmit={isPractitioner ? handlePractitionerSubmit : handlePatientSubmit}
+            className="space-y-5"
+          >
+            {/* Read-only user info */}
+            <div>
+              <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-1.5">
+                Full Name
+              </label>
+              <div className="flex items-center gap-3 px-4 py-3.5 rounded-2xl border border-slate-200 bg-slate-100 text-sm font-medium text-slate-500">
+                <User size={14} className="text-slate-400" />
+                {name}
+              </div>
+            </div>
 
-          <div>
-            <label className="text-xs font-medium">Email</label>
-            <input readOnly value={email} className="w-full px-3 py-2 rounded bg-slate-200" />
-          </div>
+            <div>
+              <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-1.5">
+                Email
+              </label>
+              <div className="flex items-center gap-3 px-4 py-3.5 rounded-2xl border border-slate-200 bg-slate-100 text-sm font-medium text-slate-500">
+                <FileText size={14} className="text-slate-400" />
+                {email}
+              </div>
+            </div>
 
-          {/* ROLE SPECIFIC */}
-          {role === "PATIENT" ? (
-            <textarea
-              rows="4"
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              className="w-full px-4 py-3 rounded border"
-              placeholder="Tell us about your goals..."
-            />
-          ) : (
-            <>
+            {/* Bio */}
+            <div>
+              <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-1.5">
+                {isPractitioner ? "Professional Bio" : "About You"}
+              </label>
               <textarea
-                rows="3"
+                rows="4"
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
-                className="w-full px-4 py-3 rounded border"
-                placeholder="About you..."
+                className="w-full px-4 py-3.5 rounded-2xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-all bg-white placeholder:text-slate-300 resize-none"
+                placeholder={
+                  isPractitioner
+                    ? "Describe your expertise, approach to healing, and experience…"
+                    : "Tell us about your wellness goals…"
+                }
               />
+            </div>
 
-              <div>
-                <label className="text-xs font-semibold text-gray-600 block mb-1">📍 Clinic Address *</label>
-                <input
-                  type="text"
-                  value={clinicAddress}
-                  onChange={(e) => setClinicAddress(e.target.value)}
-                  placeholder="e.g. 12 Wellness Lane, Bandra West, Mumbai 400050"
-                  className="w-full px-4 py-3 rounded border border-indigo-300 focus:ring-2 focus:ring-indigo-400 outline-none"
-                />
-                <p className="text-xs text-indigo-500 mt-1">Shown to patients when they book sessions</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                {specializationsOptions.map((spec) => (
-                  <label key={spec} className="flex gap-2 items-center">
-                    <input
-                      type="radio"
-                      checked={specialization === spec}
-                      onChange={() => setSpecialization(spec)}
-                    />
-                    <span className="capitalize">{spec}</span>
+            {/* Practitioner-specific fields */}
+            {isPractitioner && (
+              <>
+                {/* Clinic Address */}
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-1.5">
+                    Clinic Address
                   </label>
-                ))}
-              </div>
-
-              {/* VERIFICATION */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  Verification Status
-                </label>
-
-                <div className="flex justify-between items-center bg-yellow-50 border border-yellow-300 p-4 rounded-lg">
-                  <span className="font-semibold text-yellow-800">
-                    ❌ Not Verified
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowUploadModal(true)}
-                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-                  >
-                    Upload Documents
-                  </button>
+                  <div className="relative">
+                    <MapPin
+                      size={14}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                    />
+                    <input
+                      type="text"
+                      value={clinicAddress}
+                      onChange={(e) => setClinicAddress(e.target.value)}
+                      placeholder="e.g. 12 Wellness Lane, Bandra West, Mumbai"
+                      className="w-full pl-10 pr-4 py-3.5 rounded-2xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-all bg-white placeholder:text-slate-300"
+                    />
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-1.5 pl-1">
+                    This is shown to patients when they book sessions.
+                  </p>
                 </div>
 
-                <p className="text-xs text-slate-500">
-                  Upload certificates or license documents for admin verification
-                </p>
-              </div>
-            </>
-          )}
+                {/* Specialization */}
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">
+                    Specialization
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {specializationsOptions.map((spec) => (
+                      <button
+                        key={spec.value}
+                        type="button"
+                        onClick={() => setSpecialization(spec.value)}
+                        className={`flex items-center gap-2 p-3.5 rounded-2xl border-2 transition-all text-left ${
+                          specialization === spec.value
+                            ? "border-teal-500 bg-teal-50 shadow-sm"
+                            : "border-slate-200 bg-white hover:border-slate-300"
+                        }`}
+                      >
+                        <span className="text-lg">{spec.icon}</span>
+                        <span
+                          className={`text-xs font-black uppercase tracking-widest ${
+                            specialization === spec.value
+                              ? "text-teal-700"
+                              : "text-slate-700"
+                          }`}
+                        >
+                          {spec.label}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-          <button
-            disabled={saving}
-            className="w-full bg-teal-600 text-white py-3 rounded-lg hover:bg-teal-700"
-          >
-            {saving ? "Saving..." : "Save Profile"}
-          </button>
-        </form>
+                {/* Verification Status */}
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">
+                    Verification
+                  </label>
+                  <div className="flex items-center justify-between p-4 bg-amber-50 border border-amber-200 rounded-2xl">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center">
+                        <Stethoscope size={14} className="text-amber-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-black uppercase tracking-widest text-amber-800">
+                          Pending Verification
+                        </p>
+                        <p className="text-[10px] text-amber-600 mt-0.5">
+                          Upload your certificates to get verified
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowUploadModal(true)}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-amber-700 transition-all"
+                    >
+                      <Upload size={12} />
+                      Upload
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={saving}
+              className="w-full py-4 rounded-2xl bg-slate-900 text-white font-black text-sm uppercase tracking-widest hover:bg-slate-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-900/20 mt-2"
+            >
+              {saving ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                <>
+                  Save Profile
+                  <ChevronRight size={16} />
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+      </div>
+
+      {/* ── RIGHT: HERO PANEL ── */}
+      <div className="hidden lg:flex lg:flex-1 relative overflow-hidden bg-[#0f172a]">
+        <img
+          src="https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1400&q=80"
+          className="w-full h-full object-cover opacity-40"
+          alt="Wellness"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent" />
+
+        {/* Content overlay */}
+        <div className="absolute inset-0 flex flex-col justify-between p-16">
+          <div>
+            <div className="flex items-center gap-2 mb-6">
+              <span className="w-8 h-0.5 bg-teal-400" />
+              <span className="text-xs font-black uppercase tracking-[0.3em] text-teal-400">
+                {isPractitioner ? "Practitioner Onboarding" : "Wellness Profile"}
+              </span>
+            </div>
+            <h2 className="text-5xl font-black text-white italic uppercase tracking-tighter leading-none">
+              Your Journey<br />
+              <span className="text-teal-400">Begins Here</span>
+            </h2>
+          </div>
+
+          <div className="space-y-4">
+            {[
+              isPractitioner ? "Manage your therapy services" : "Book therapy sessions",
+              isPractitioner ? "Accept patient bookings" : "Explore wellness products",
+              isPractitioner ? "Grow your practice" : "Get AI-powered health insights",
+            ].map((item, i) => (
+              <div key={i} className="flex items-center gap-4">
+                <div className="w-8 h-8 rounded-full bg-teal-500/20 border border-teal-500/30 flex items-center justify-center shrink-0">
+                  <CheckCircle size={14} className="text-teal-400" />
+                </div>
+                <p className="text-white/80 text-sm font-medium">{item}</p>
+              </div>
+            ))}
+
+            <div className="mt-8 p-6 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10">
+              <p className="text-white text-base font-black italic leading-snug">
+                &ldquo;A healthy outside starts from the inside.&rdquo;
+              </p>
+              <p className="text-white/40 text-xs font-bold uppercase tracking-widest mt-2">
+                Wellnest Philosophy
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* ===== UPLOAD MODAL ===== */}
       {showUploadModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg w-full max-w-md space-y-4">
-            <h3 className="text-lg font-bold">Upload Documents</h3>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-md shadow-2xl overflow-hidden">
+            {/* Modal header */}
+            <div className="p-8 pb-6 border-b border-slate-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-black text-slate-900">Upload Certificate</h3>
+                  <p className="text-sm text-slate-500 mt-1">
+                    Share a Google Drive link to your credentials.
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowUploadModal(false);
+                    setUploadError("");
+                    setUploadSuccess("");
+                  }}
+                  className="p-2 rounded-xl hover:bg-slate-100 transition-colors"
+                >
+                  <X size={18} className="text-slate-500" />
+                </button>
+              </div>
+            </div>
 
-            {uploadError && (
-              <p className="text-red-600 text-sm">{uploadError}</p>
-            )}
+            <div className="p-8 space-y-4">
+              {uploadError && (
+                <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-sm flex items-start gap-2">
+                  <X size={14} className="mt-0.5 shrink-0" />
+                  {uploadError}
+                </div>
+              )}
 
-            <input
-              type="text"
-              placeholder="Paste Google Drive link here"
-              value={driveLink}
-              onChange={(e) => setDriveLink(e.target.value)}
-              className="w-full border px-3 py-2 rounded"
-            />
+              {uploadSuccess && (
+                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-700 text-sm flex items-center gap-2">
+                  <CheckCircle size={14} className="shrink-0" />
+                  {uploadSuccess}
+                </div>
+              )}
 
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowUploadModal(false)}
-                className="px-4 py-2 border rounded"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCertificateUpload}
-                disabled={uploading}
-                className="bg-blue-600 text-white px-4 py-2 rounded"
-              >
-                {uploading ? "Submitting..." : "Submit"}
-              </button>
+              <div>
+                <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">
+                  Google Drive Link
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://drive.google.com/file/d/..."
+                  value={driveLink}
+                  onChange={(e) => setDriveLink(e.target.value)}
+                  className="w-full px-4 py-3.5 rounded-2xl border border-slate-200 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-all bg-white placeholder:text-slate-300"
+                />
+                <p className="text-[10px] text-slate-400 mt-1.5 pl-1">
+                  Make sure the link is publicly accessible or shared with the admin email.
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    setShowUploadModal(false);
+                    setUploadError("");
+                  }}
+                  className="flex-1 py-3.5 rounded-2xl border-2 border-slate-200 text-slate-700 font-black text-sm uppercase tracking-widest hover:bg-slate-50 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCertificateUpload}
+                  disabled={uploading || !!uploadSuccess}
+                  className="flex-1 py-3.5 rounded-2xl bg-slate-900 text-white font-black text-sm uppercase tracking-widest hover:bg-slate-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                >
+                  {uploading ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" /> Submitting…
+                    </>
+                  ) : (
+                    <>
+                      <Upload size={14} /> Submit
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
