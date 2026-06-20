@@ -14,6 +14,7 @@ import com.example.wellnessbackend.repository.UserRepository;
 import com.example.wellnessbackend.security.JwtUtil;
 import com.example.wellnessbackend.service.EmailService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -38,6 +39,9 @@ public class AuthController {
     private final PractitionerProfileRepository practitionerProfileRepository;  // ⭐ Added
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final EmailService emailService;
+
+    @Value("${app.frontend.url}")
+    private String frontendUrl;
 
     // ------------------- REGISTER -------------------
     @PostMapping("/register")
@@ -166,7 +170,7 @@ public class AuthController {
             passwordResetTokenRepository.save(resetToken);
 
             // Send Email
-            String resetLink = "http://localhost:5173/reset-password?token=" + token;
+            String resetLink = frontendUrl + "/reset-password?token=" + token;
             emailService.sendPasswordResetEmail(user.getEmail(), resetLink);
         });
 
