@@ -2,18 +2,22 @@ package com.example.wellnessbackend.controller;
 
 import com.example.wellnessbackend.dto.LoginRequest;
 import com.example.wellnessbackend.dto.RegisterRequest;
+import com.example.wellnessbackend.entity.PasswordResetToken;
 import com.example.wellnessbackend.entity.PractitionerProfile;
 import com.example.wellnessbackend.entity.RefreshToken;
 import com.example.wellnessbackend.entity.Role;
 import com.example.wellnessbackend.entity.User;
+import com.example.wellnessbackend.repository.PasswordResetTokenRepository;
 import com.example.wellnessbackend.repository.PractitionerProfileRepository;
 import com.example.wellnessbackend.repository.RefreshTokenRepository;
 import com.example.wellnessbackend.repository.UserRepository;
 import com.example.wellnessbackend.security.JwtUtil;
+import com.example.wellnessbackend.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -32,6 +36,8 @@ public class AuthController {
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
     private final PractitionerProfileRepository practitionerProfileRepository;  // ⭐ Added
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final EmailService emailService;
 
     // ------------------- REGISTER -------------------
     @PostMapping("/register")
@@ -136,6 +142,71 @@ public class AuthController {
                 "accessToken", jwtUtil.generateToken(userDetails, user.getRole().name()),
                 "refreshToken", request.getRefreshToken()
         ));
+    }
+
+    // ------------------- FORGOT PASSWORD -------------------
+    @PostMapping("/forgot-password")
+    @Transactional
+    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        if (email == null || email.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email is required"));
+        }
+
+        userRepository.findByEmail(email).ifPresent(user -> {
+            // Delete any existing tokens for the user
+            passwordResetTokenRepository.deleteByUser(user);
+
+            // Generate new token
+            String token = UUID.randomUUID().toString();
+            PasswordResetToken resetToken = new PasswordResetToken();
+            resetToken.setToken(token);
+            resetToken.setUser(user);
+            resetToken.setExpiryDate(Instant.now().plusSeconds(15 * 60)); // 15 mins expiry
+            passwordResetTokenRepository.save(resetToken);
+
+            // Send Email
+            String resetLink = "http://localhost:5173/reset-password?token=" + token;
+            emailService.sendPasswordResetEmail(user.getEmail(), resetLink);
+        });
+
+        return ResponseEntity.ok(Map.of("message", "If the email is registered on our platform, a password reset link has been sent."));
+    }
+
+    // ------------------- RESET PASSWORD -------------------
+    @PostMapping("/reset-password")
+    @Transactional
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> request) {
+        String token = request.get("token");
+        String newPassword = request.get("password");
+
+        if (token == null || newPassword == null || newPassword.trim().length() < 6) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Invalid token or password (min 6 characters)"));
+        }
+
+        Optional<PasswordResetToken> tokenOpt = passwordResetTokenRepository.findByToken(token);
+        if (tokenOpt.isEmpty()) {
+            return ResponseEntity.status(400).body(Map.of("message", "Invalid or expired reset token"));
+        }
+
+        PasswordResetToken resetToken = tokenOpt.get();
+        if (resetToken.getExpiryDate().isBefore(Instant.now())) {
+            passwordResetTokenRepository.delete(resetToken);
+            return ResponseEntity.status(400).body(Map.of("message", "Reset token has expired"));
+        }
+
+        User user = resetToken.getUser();
+        if (passwordEncoder.matches(newPassword, user.getPassword())) {
+            return ResponseEntity.status(400).body(Map.of("message", "New password cannot be the same as your old password."));
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        // Delete the token
+        passwordResetTokenRepository.delete(resetToken);
+
+        return ResponseEntity.ok(Map.of("message", "Password has been successfully reset."));
     }
 
     public static class TokenRefreshRequest {
