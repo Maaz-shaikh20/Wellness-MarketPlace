@@ -69,6 +69,15 @@ export default function Login() {
       <div className="w-full lg:w-[42%] flex items-center justify-center p-8 bg-gradient-to-br from-slate-50 via-teal-50 to-cyan-100">
         <div className="w-full max-w-md">
 
+          {/* Back to Home */}
+          <button
+            onClick={() => navigate("/")}
+            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-600 mb-8 transition-colors font-semibold"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
+            Back to Home
+          </button>
+
           {/* Brand */}
           <div className="flex items-center gap-3 mb-10">
             <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white text-xl shadow-lg">

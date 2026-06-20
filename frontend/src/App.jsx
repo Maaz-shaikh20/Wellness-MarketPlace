@@ -3,13 +3,19 @@ import {
   Routes,
   Route,
   Navigate,
+  useLocation,
 } from "react-router-dom";
 import { CartProvider } from "./context/CartContext";
 
 /* ========= AUTH & USER ========= */
+import LandingPage from "./pages/LandingPage";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Home from "./pages/Home";
+import AboutUs from "./pages/AboutUs";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import Contact from "./pages/Contact";
 import Dashboard from "./pages/Dashboard";
 import ViewProfile from "./pages/ViewProfile";
 import MySessions from "./pages/MySessions";
@@ -48,6 +54,7 @@ import EditProduct from "./pages/EditProduct";
 import PrivateRoute from "./routes/PrivateRoute";
 import AdminRoute from "./routes/AdminRoute";
 import PractitionerRoute from "./routes/PractitionerRoute";
+import ScrollToTop from "./routes/ScrollToTop";
 
 /* ========= 404 PAGE ========= */
 function NotFound() {
@@ -72,18 +79,23 @@ function NotFound() {
   );
 }
 
-export default function App() {
+/* ========= ANIMATED ROUTES WRAPPER ========= */
+function AnimatedRoutes() {
+  const location = useLocation();
   return (
-    <CartProvider>
-      <Router>
-        <Routes>
+    <div key={location.pathname} className="page-enter">
+      <Routes location={location}>
           {/* ========= ROOT ========= */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<LandingPage />} />
 
           {/* ========= PUBLIC ========= */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/product/:id" element={<ProductDetail />} />
+          <Route path="/about" element={<AboutUs />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/contact" element={<Contact />} />
 
           {/* ========= USER (PROTECTED) ========= */}
           <Route path="/home" element={<PrivateRoute><Home /></PrivateRoute>} />
@@ -128,7 +140,17 @@ export default function App() {
 
           {/* ========= 404 FALLBACK ========= */}
           <Route path="*" element={<NotFound />} />
-        </Routes>
+      </Routes>
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <CartProvider>
+      <Router>
+        <ScrollToTop />
+        <AnimatedRoutes />
       </Router>
     </CartProvider>
   );
