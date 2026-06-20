@@ -144,32 +144,4 @@ public class AuthController {
         public void setRefreshToken(String refreshToken) { this.refreshToken = refreshToken; }
     }
 
-    // ------------------- ADMIN PRACTITIONER MANAGEMENT -------------------
-
-    @GetMapping("/admin/practitioners/unverified")
-    public ResponseEntity<?> getUnverifiedPractitioners() {
-        List<User> practitioners = userRepository.findByRoleAndVerified(Role.PRACTITIONER, false);
-        return ResponseEntity.ok(practitioners);
-    }
-
-    @PutMapping("/admin/practitioner/{id}/verify")
-    public ResponseEntity<?> verifyPractitioner(@PathVariable Long id) {
-        Optional<User> practitionerOpt = userRepository.findById(id);
-
-        if (practitionerOpt.isEmpty() || practitionerOpt.get().getRole() != Role.PRACTITIONER) {
-            return ResponseEntity.status(404).body(Map.of("message", "Practitioner not found"));
-        }
-
-        User practitioner = practitionerOpt.get();
-        practitioner.setVerified(true);
-        userRepository.save(practitioner);
-
-        return ResponseEntity.ok(Map.of("message", "Practitioner verified successfully"));
-    }
-
-    @GetMapping("/practitioners")
-    public ResponseEntity<?> getVerifiedPractitioners() {
-        List<User> practitioners = userRepository.findByRoleAndVerified(Role.PRACTITIONER, true);
-        return ResponseEntity.ok(practitioners);
-    }
 }

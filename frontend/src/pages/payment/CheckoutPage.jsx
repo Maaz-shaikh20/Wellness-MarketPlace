@@ -2,10 +2,12 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import api from "../../api/axios";
 import { ArrowLeft, CreditCard, ShoppingBag } from "lucide-react";
+import { useCart } from "../../context/CartContext";
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { refreshCart } = useCart();
   
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user") || "null");
@@ -82,6 +84,7 @@ if (!phoneNumber || phoneNumber.length < 10) {
       }
     );
 
+    refreshCart(); // ✅ Reset cart badge count immediately
     navigate("/payment-method", {
       state: { orderId: response.data.orderId },
       replace: true,
@@ -225,62 +228,55 @@ if (!phoneNumber || phoneNumber.length < 10) {
               </h2>
 
               {/* ADDRESS */}
-              <div>
+              <div className="space-y-1">
                 <label className="text-xs font-bold uppercase text-slate-500">
-                  Billing Address
+                  Delivery Address
                 </label>
                 <textarea
                   value={deliveryAddress}
-                  onChange={(e) => setDeliveryAddress(e.target.value)}
-                  className="w-full mt-1 border rounded-xl p-3 text-sm"
-                  placeholder="Enter full delivery address"
+                  onChange={(e) => {
+                    setDeliveryAddress(e.target.value);
+                    setAddressError("");
+                  }}
                   rows={3}
+                  required
+                  className="w-full border rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-black bg-white"
+                  placeholder="Enter full delivery address"
                 />
+                {addressError && (
+                  <p className="text-xs text-red-500 font-semibold">
+                    {addressError}
+                  </p>
+                )}
               </div>
 
               {/* PHONE */}
-              <div>
+              <div className="space-y-1">
                 <label className="text-xs font-bold uppercase text-slate-500">
                   Phone Number
                 </label>
                 <input
                   type="tel"
                   value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="w-full mt-1 border rounded-xl p-3 text-sm"
+                  onChange={(e) => {
+                    setPhoneNumber(e.target.value);
+                    setPhoneError("");
+                  }}
+                  className="w-full border rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-black bg-white"
                   placeholder="Enter phone number"
+                  required
                 />
+                {phoneError && (
+                  <p className="text-xs text-red-500 font-semibold">
+                    {phoneError}
+                  </p>
+                )}
               </div>
 
               {error && (
                 <p className="text-sm text-red-500 font-semibold">{error}</p>
               )}
             </div>
-             {/* DELIVERY ADDRESS */}
-<div className="space-y-1">
-  <label className="text-xs font-bold uppercase text-slate-500">
-    Delivery Address
-  </label>
-
-  <textarea
-    value={deliveryAddress}
-    onChange={(e) => {
-      setDeliveryAddress(e.target.value);
-      setAddressError("");
-    }}
-    rows={3}
-    required
-    className="w-full border rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-    placeholder="Enter full delivery address"
-  />
-
-  {addressError && (
-    <p className="text-xs text-red-500 font-semibold">
-      {addressError}
-    </p>
-  )}
-</div>
-
 
             <button
               onClick={handleCheckout}

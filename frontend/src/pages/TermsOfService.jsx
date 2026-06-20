@@ -4,9 +4,9 @@ import { ArrowLeft } from "lucide-react";
 
 function Section({ title, children }) {
   return (
-    <div style={{ marginBottom: 40 }}>
-      <h2 style={{ fontSize: "1.15rem", fontWeight: 800, color: "#0f172a", marginBottom: 12 }}>{title}</h2>
-      <div style={{ fontSize: "0.9rem", color: "#475569", lineHeight: 1.8 }}>{children}</div>
+    <div className="mb-10">
+      <h2 className="text-base font-extrabold text-slate-900 tracking-tight mb-3">{title}</h2>
+      <div className="text-sm text-slate-500 leading-relaxed space-y-2">{children}</div>
     </div>
   );
 }
@@ -14,25 +14,32 @@ function Section({ title, children }) {
 export default function TermsOfService() {
   const navigate = useNavigate();
   return (
-    <div style={{ fontFamily: "'Inter','Segoe UI',sans-serif", background: "#fff", color: "#0f172a", minHeight: "100vh" }}>
-      <nav style={{ position: "sticky", top: 0, zIndex: 50, background: "rgba(255,255,255,0.95)", backdropFilter: "blur(16px)", borderBottom: "1px solid #f1f5f9", padding: "0 2rem" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", height: 64 }}>
-          <button onClick={() => navigate(-1)} style={{ display: "flex", alignItems: "center", gap: 8, background: "none", border: "none", cursor: "pointer", color: "#64748b", fontSize: "0.85rem", fontWeight: 700 }}>
+    <div className="min-h-screen bg-white text-slate-900 font-sans">
+      {/* NAV */}
+      <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-100 px-6 py-4">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500 hover:text-slate-900 transition-colors"
+          >
             <ArrowLeft size={16} /> Back
           </button>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 10, background: "#0f172a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>🌿</div>
-            <span style={{ fontWeight: 900, fontSize: "1rem", letterSpacing: "-0.04em", textTransform: "uppercase", fontStyle: "italic" }}>Wellnest</span>
+          
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-slate-900 flex items-center justify-center text-white text-base">🌿</div>
+            <span className="font-black text-base tracking-tighter text-slate-900 uppercase italic">Wellnest</span>
           </div>
-          <div style={{ width: 90 }} />
+
+          <div className="w-20 hidden sm:block" />
         </div>
       </nav>
 
-      <div style={{ maxWidth: 760, margin: "0 auto", padding: "60px 2rem 100px" }}>
-        <div style={{ marginBottom: 48 }}>
-          <span style={{ fontSize: "0.72rem", fontWeight: 800, color: "#059669", textTransform: "uppercase", letterSpacing: "0.08em" }}>Legal</span>
-          <h1 style={{ fontSize: "clamp(2rem,4vw,3rem)", fontWeight: 900, letterSpacing: "-0.04em", marginTop: 8, marginBottom: 12 }}>Terms of Service</h1>
-          <p style={{ color: "#94a3b8", fontSize: "0.85rem" }}>Last updated: June 20, 2025</p>
+      {/* Content */}
+      <div className="max-w-3xl mx-auto px-6 py-12 md:py-16 pb-24">
+        <div className="mb-10 border-b border-slate-100 pb-8">
+          <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Legal</span>
+          <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-none mt-2 mb-3">Terms of Service</h1>
+          <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Last updated: June 20, 2025</p>
         </div>
 
         <Section title="1. Acceptance of Terms">
@@ -68,12 +75,12 @@ export default function TermsOfService() {
         </Section>
 
         <Section title="9. Contact">
-          For any questions about these Terms, contact us at <strong>legal@wellnest.in</strong>.
+          For any questions about these Terms, contact us at <strong className="text-slate-900">legal@wellnest.in</strong>.
         </Section>
 
-        <div style={{ marginTop: 48, padding: "24px 28px", borderRadius: 20, background: "#f8fafc", border: "1px solid #e2e8f0" }}>
-          <p style={{ fontSize: "0.85rem", color: "#64748b", lineHeight: 1.7 }}>
-            Questions about our terms? Email us at <strong style={{ color: "#0f172a" }}>legal@wellnest.in</strong>
+        <div className="mt-12 p-6 rounded-2xl bg-slate-50 border border-slate-100 text-xs text-slate-500 leading-relaxed">
+          <p>
+            Questions about our terms? Email us at <strong className="text-slate-900">legal@wellnest.in</strong>
           </p>
         </div>
       </div>

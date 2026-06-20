@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api/axios";
+import { useCart } from "../context/CartContext";
 
 const roles = [
   {
@@ -19,6 +20,7 @@ const roles = [
 
 export default function Signup() {
   const navigate = useNavigate();
+  const { refreshCart } = useCart();
   const [name,     setName]     = useState("");
   const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
@@ -44,6 +46,7 @@ export default function Signup() {
 
     try {
       await api.post("/auth/register", { name, email, password, role });
+      refreshCart();
       setSuccess("Account created! Redirecting to login…");
       setTimeout(() => navigate("/login"), 1500);
     } catch (err) {

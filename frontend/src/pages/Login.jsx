@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api/axios";
+import { useCart } from "../context/CartContext";
 
 export default function Login() {
   const navigate = useNavigate();
+  const { refreshCart } = useCart();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -25,7 +27,11 @@ export default function Login() {
       localStorage.setItem("token", token);
       localStorage.setItem("role",  role);
 
-      if (role === "ADMIN") { navigate("/admin", { replace: true }); return; }
+      if (role === "ADMIN") {
+        refreshCart();
+        navigate("/admin", { replace: true });
+        return;
+      }
 
       const userRes = await api.get("/users/me");
       const user = userRes.data;
@@ -47,13 +53,16 @@ export default function Login() {
             rejectionReason: practitionerRaw.rejectionReason,
           };
           localStorage.setItem("practitioner", JSON.stringify(practitioner));
+          refreshCart();
           navigate(practitioner.verified ? "/practitioner/home" : "/dashboard", { replace: true });
         } catch {
+          refreshCart();
           navigate("/dashboard", { replace: true });
         }
         return;
       }
 
+      refreshCart();
       navigate("/home", { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || "Login failed. Please check your credentials.");

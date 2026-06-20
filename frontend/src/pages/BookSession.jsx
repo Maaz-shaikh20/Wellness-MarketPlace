@@ -24,6 +24,31 @@ export default function BookSession() {
   const [loading, setLoading] = useState(false);
   const [showToast, setShowToast] = useState(false);
 
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  const localToday = `${yyyy}-${mm}-${dd}`;
+
+  const isSlotPast = (slot) => {
+    if (selectedDate !== localToday) return false;
+    const [slotHour, slotMinute] = slot.split(":").map(Number);
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    if (slotHour < currentHour) return true;
+    if (slotHour === currentHour && slotMinute <= currentMinute) return true;
+    return false;
+  };
+
+  useEffect(() => {
+    if (selectedDate === localToday && selectedSlot) {
+      if (isSlotPast(selectedSlot)) {
+        setSelectedSlot("");
+      }
+    }
+  }, [selectedDate, selectedSlot]);
+
   const user = JSON.parse(localStorage.getItem("user"));
   const userId = user?.id;
   const token = localStorage.getItem("token");
@@ -161,7 +186,7 @@ export default function BookSession() {
             </label>
             <input
               type="date"
-              min={new Date().toISOString().split("T")[0]}
+              min={localToday}
               onChange={e => setSelectedDate(e.target.value)}
               className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
@@ -172,19 +197,25 @@ export default function BookSession() {
               <Clock size={16} /> Select Time Slot
             </label>
             <div className="grid grid-cols-3 gap-3">
-              {TIME_SLOTS.map(slot => (
-                <button
-                  key={slot}
-                  onClick={() => setSelectedSlot(slot)}
-                  className={`py-3 rounded-xl text-sm font-semibold border transition ${
-                    selectedSlot === slot
-                      ? "bg-indigo-600 text-white border-indigo-600"
-                      : "bg-white border-gray-300 text-gray-700 hover:border-indigo-400"
-                  }`}
-                >
-                  {slot}
-                </button>
-              ))}
+              {TIME_SLOTS.map(slot => {
+                const past = isSlotPast(slot);
+                return (
+                  <button
+                    key={slot}
+                    disabled={past}
+                    onClick={() => setSelectedSlot(slot)}
+                    className={`py-3 rounded-xl text-sm font-semibold border transition ${
+                      selectedSlot === slot
+                        ? "bg-indigo-600 text-white border-indigo-600"
+                        : past
+                        ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed"
+                        : "bg-white border-gray-300 text-gray-700 hover:border-indigo-400"
+                    }`}
+                  >
+                    {slot}
+                  </button>
+                );
+              })}
             </div>
           </div>
 

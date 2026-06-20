@@ -54,6 +54,7 @@ export default function Dashboard() {
         const userData = res.data;
         setUser(userData);
         setBio(userData.bio || "");
+        localStorage.setItem("user", JSON.stringify(userData));
 
         if (userData.role === "PRACTITIONER") {
           const practitionerRes = await api.get(`/practitioners/user/${userData.id}`);
@@ -61,6 +62,21 @@ export default function Dashboard() {
           setBio(practitionerData.bio || "");
           setSpecialization(practitionerData.specialization || specializationsOptions[0].value);
           setClinicAddress(practitionerData.clinicAddress || "");
+          
+          const practitionerObj = {
+            id: practitionerData.id,
+            userId: userData.id,
+            name: userData.name,
+            email: userData.email,
+            specialization: practitionerData.specialization,
+            bio: practitionerData.bio,
+            clinicAddress: practitionerData.clinicAddress,
+            verified: practitionerData.verified,
+            rating: practitionerData.rating,
+            certificateLink: practitionerData.certificateLink,
+            rejectionReason: practitionerData.rejectionReason,
+          };
+          localStorage.setItem("practitioner", JSON.stringify(practitionerObj));
         }
       } catch (err) {
         console.error(err);
@@ -86,6 +102,11 @@ export default function Dashboard() {
     setSaving(true);
     try {
       await api.put(`/users/${user.id}`, { bio });
+      
+      const updatedUser = { ...user, bio };
+      setUser(updatedUser);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+
       showSuccess("Profile updated successfully!");
       setTimeout(() => navigate("/home"), 1200);
     } catch (err) {
@@ -100,9 +121,30 @@ export default function Dashboard() {
     setError("");
     setSaving(true);
     try {
-      await api.put(`/practitioners/user/${user.id}`, { bio, specialization, clinicAddress });
+      const res = await api.put(`/practitioners/user/${user.id}`, { bio, specialization, clinicAddress });
+      const practitionerData = res.data;
+      
+      const practitionerObj = {
+        id: practitionerData.id,
+        userId: user.id,
+        name: user.name,
+        email: user.email,
+        specialization: practitionerData.specialization,
+        bio: practitionerData.bio,
+        clinicAddress: practitionerData.clinicAddress,
+        verified: practitionerData.verified,
+        rating: practitionerData.rating,
+        certificateLink: practitionerData.certificateLink,
+        rejectionReason: practitionerData.rejectionReason,
+      };
+      localStorage.setItem("practitioner", JSON.stringify(practitionerObj));
+
+      const updatedUser = { ...user, bio, verified: false };
+      setUser(updatedUser);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+
       showSuccess("Profile updated successfully!");
-      setTimeout(() => navigate("/practitioner/home"), 1200);
+      setTimeout(() => navigate(practitionerData.verified ? "/practitioner/home" : "/dashboard"), 1200);
     } catch (err) {
       setError(err.response?.data?.message || "Could not save practitioner profile.");
     } finally {
@@ -122,6 +164,29 @@ export default function Dashboard() {
       const res = await api.post(`/practitioners/user/${user.id}/upload-certificate`, {
         driveLink,
       });
+
+      // Sync updated practitioner data locally
+      const practitionerRes = await api.get(`/practitioners/user/${user.id}`);
+      const practitionerData = practitionerRes.data;
+      const practitionerObj = {
+        id: practitionerData.id,
+        userId: user.id,
+        name: user.name,
+        email: user.email,
+        specialization: practitionerData.specialization,
+        bio: practitionerData.bio,
+        clinicAddress: practitionerData.clinicAddress,
+        verified: practitionerData.verified,
+        rating: practitionerData.rating,
+        certificateLink: practitionerData.certificateLink,
+        rejectionReason: practitionerData.rejectionReason,
+      };
+      localStorage.setItem("practitioner", JSON.stringify(practitionerObj));
+
+      const updatedUser = { ...user, verified: false };
+      setUser(updatedUser);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+
       setUploadSuccess(res.data.message || "Documents submitted for review!");
       setTimeout(() => {
         setShowUploadModal(false);
