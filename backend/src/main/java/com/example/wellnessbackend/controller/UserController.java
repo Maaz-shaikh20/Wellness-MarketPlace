@@ -11,6 +11,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 
 @RestController
 @RequestMapping("/api/users")
@@ -102,6 +105,19 @@ public class UserController {
     }
 
     // =========================
+    // FIX #6: BATCH FETCH USERS BY IDs (eliminates N+1 pattern on session pages)
+    // POST /api/users/batch  —  body: [1, 2, 3, ...]
+    // Returns a map of { userId -> { id, name, email } } for fast frontend lookup
+    // =========================
+    @PostMapping("/batch")
+    public ResponseEntity<Map<Long, UserResponseDto>> getUsersByIds(@RequestBody List<Long> ids) {
+        Map<Long, UserResponseDto> result = userRepository.findAllById(ids)
+                .stream()
+                .collect(Collectors.toMap(User::getId, user -> toDto(user, null)));
+        return ResponseEntity.ok(result);
+    }
+
+    // =========================
     // Helper method to convert User -> DTO
     // =========================
     private UserResponseDto toDto(User user, String message) {
@@ -115,3 +131,4 @@ public class UserController {
         );
     }
 }
+

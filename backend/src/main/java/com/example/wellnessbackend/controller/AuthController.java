@@ -14,6 +14,7 @@ import com.example.wellnessbackend.repository.UserRepository;
 import com.example.wellnessbackend.security.JwtUtil;
 import com.example.wellnessbackend.service.EmailService;
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -45,7 +46,7 @@ public class AuthController {
 
     // ------------------- REGISTER -------------------
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody RegisterRequest request) {
+    public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterRequest request) {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             return ResponseEntity.badRequest().body(Map.of("message", "Email already exists"));
         }
@@ -82,7 +83,7 @@ public class AuthController {
 
     // ------------------- LOGIN -------------------
     @PostMapping("/login")
-    public ResponseEntity<?> loginUser(@RequestBody LoginRequest request) {
+    public ResponseEntity<?> loginUser(@Valid @RequestBody LoginRequest request) {
         return userRepository.findByEmail(request.getEmail())
                 .map(user -> {
                     if (passwordEncoder.matches(request.getPassword(), user.getPassword())) {
@@ -95,6 +96,9 @@ public class AuthController {
                                 .build();
 
                         // Generate AccessToken using userDetails + role
+                        // FIX #4: Invalidate any pending password reset tokens on successful login
+                        passwordResetTokenRepository.deleteByUser(user);
+
                         String accessToken = jwtUtil.generateToken(userDetails, user.getRole().name());
                         String refreshToken = UUID.randomUUID().toString();
 

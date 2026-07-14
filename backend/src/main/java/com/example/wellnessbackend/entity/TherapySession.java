@@ -1,5 +1,6 @@
 package com.example.wellnessbackend.entity;
 import com.example.wellnessbackend.entity.CancelledBy;
+import com.example.wellnessbackend.entity.SessionStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -29,8 +30,10 @@ public class TherapySession {
     @Column(nullable = false)
     private LocalDateTime dateTime; // Scheduled session time
 
+    // FIX #7: Changed from raw String to type-safe enum
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status; // booked / completed / cancelled
+    private SessionStatus status;
 
     @Column(length = 2000)
     private String notes; // Optional session notes
@@ -45,3 +48,4 @@ public class TherapySession {
     private CancelledBy cancelledBy;
 
 }
+

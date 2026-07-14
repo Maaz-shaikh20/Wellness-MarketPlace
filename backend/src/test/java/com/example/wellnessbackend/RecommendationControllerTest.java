@@ -3,103 +3,110 @@ package com.example.wellnessbackend;
 import com.example.wellnessbackend.controller.RecommendationController;
 import com.example.wellnessbackend.dto.RecommendationRequestDto;
 import com.example.wellnessbackend.dto.RecommendationResponseDto;
+import com.example.wellnessbackend.entity.User;
+import com.example.wellnessbackend.entity.Role;
+import com.example.wellnessbackend.repository.UserRepository;
 import com.example.wellnessbackend.service.RecommendationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.Collections;
-import java.util.List;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+/**
+ * Fix #17: Updated RecommendationControllerTest to use @WebMvcTest (not standalone setup).
+ * This properly handles the Authentication injection added in Fix #2.
+ */
+@WebMvcTest(controllers = RecommendationController.class)
+@Import({com.example.wellnessbackend.security.RateLimitFilter.class})
 public class RecommendationControllerTest {
 
+    @Autowired
     private MockMvc mockMvc;
-    private StubRecommendationService stubService;
-    private RecommendationController recommendationController;
+
+    @MockBean
+    private RecommendationService recommendationService;
+
+    @MockBean
+    private UserRepository userRepository;
+
+    // Required by Spring Security auto-config in @WebMvcTest context
+    @MockBean
+    private com.example.wellnessbackend.security.JwtUtil jwtUtil;
+
+    @MockBean
+    private com.example.wellnessbackend.security.CustomUserDetailsService userDetailsService;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    // Manual Stub Subclass to bypass Java 23 class-mocking issues
-    private static class StubRecommendationService extends RecommendationService {
-        public RecommendationResponseDto generateRecommendationResult;
-        public List<RecommendationResponseDto> getRecommendationsByUserResult;
-        public boolean deleteByIdResult;
-        public int deleteAllByUserIdResult;
-
-        public RecommendationRequestDto lastGenerateDto;
-        public Long lastGetUserId;
-        public Long lastDeleteId;
-        public Long lastClearUserId;
-
-        public StubRecommendationService() {
-            super(null, null);
-        }
-
-        @Override
-        public RecommendationResponseDto generateRecommendation(RecommendationRequestDto dto) {
-            this.lastGenerateDto = dto;
-            return generateRecommendationResult;
-        }
-
-        @Override
-        public List<RecommendationResponseDto> getRecommendationsByUser(Long userId) {
-            this.lastGetUserId = userId;
-            return getRecommendationsByUserResult;
-        }
-
-        @Override
-        public boolean deleteById(Long id) {
-            this.lastDeleteId = id;
-            return deleteByIdResult;
-        }
-
-        @Override
-        public int deleteAllByUserId(Long userId) {
-            this.lastClearUserId = userId;
-            return deleteAllByUserIdResult;
-        }
-    }
-
-    @BeforeEach
-    void setUp() {
-        stubService = new StubRecommendationService();
-        recommendationController = new RecommendationController(stubService);
-        mockMvc = MockMvcBuilders.standaloneSetup(recommendationController).build();
-    }
+    // ── POST /api/recommendations ──────────────────────────────────────────
 
     @Test
+    @WithMockUser(username = "test@wellnest.com", roles = {"PATIENT"})
+    @DisplayName("POST /api/recommendations → 201 with therapy result")
     void testGenerateRecommendation() throws Exception {
-        RecommendationRequestDto requestDto = new RecommendationRequestDto();
-        requestDto.setUserId(1L);
-        requestDto.setSymptom("Anxiety");
+        // Stub userRepository lookup (Fix #2: controller resolves user from JWT email)
+        User mockUser = new User();
+        mockUser.setId(1L);
+        mockUser.setEmail("test@wellnest.com");
+        mockUser.setRole(Role.PATIENT);
+        when(userRepository.findByEmail("test@wellnest.com")).thenReturn(Optional.of(mockUser));
 
         RecommendationResponseDto responseDto = new RecommendationResponseDto();
         responseDto.setId(100L);
         responseDto.setUserId(1L);
         responseDto.setSymptom("Anxiety");
-        responseDto.setSuggestedTherapy("Yoga");
-        responseDto.setSourceAPI("Rule-based AI Engine");
+        responseDto.setSuggestedTherapy("Yoga / Pranayama");
+        responseDto.setSourceAPI("Wellnest Rule-Based Wellness Engine v2");
 
-        stubService.generateRecommendationResult = responseDto;
+        when(recommendationService.generateRecommendation(any())).thenReturn(responseDto);
+
+        RecommendationRequestDto requestDto = new RecommendationRequestDto();
+        requestDto.setSymptom("Anxiety");
 
         mockMvc.perform(post("/api/recommendations")
+                        .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestDto)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(100L))
-                .andExpect(jsonPath("$.suggestedTherapy").value("Yoga"));
-
-        assertNotNull(stubService.lastGenerateDto);
-        assertEquals("Anxiety", stubService.lastGenerateDto.getSymptom());
+                .andExpect(jsonPath("$.suggestedTherapy").value("Yoga / Pranayama"));
     }
 
     @Test
+    @WithMockUser(username = "test@wellnest.com", roles = {"PATIENT"})
+    @DisplayName("POST /api/recommendations with blank symptom → 400 validation error")
+    void testGenerateRecommendation_BlankSymptom_Returns400() throws Exception {
+        RecommendationRequestDto badDto = new RecommendationRequestDto();
+        badDto.setSymptom(""); // @NotBlank should reject this
+
+        mockMvc.perform(post("/api/recommendations")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(badDto)))
+                .andExpect(status().isBadRequest());
+    }
+
+    // ── GET /api/recommendations/user/{userId} ────────────────────────────
+
+    @Test
+    @WithMockUser(roles = {"PATIENT"})
+    @DisplayName("GET /api/recommendations/user/1 → returns list")
     void testGetRecommendationsByUser() throws Exception {
         RecommendationResponseDto responseDto = new RecommendationResponseDto();
         responseDto.setId(100L);
@@ -107,45 +114,46 @@ public class RecommendationControllerTest {
         responseDto.setSymptom("Anxiety");
         responseDto.setSuggestedTherapy("Yoga");
 
-        stubService.getRecommendationsByUserResult = Collections.singletonList(responseDto);
+        when(recommendationService.getRecommendationsByUser(1L))
+                .thenReturn(Collections.singletonList(responseDto));
 
         mockMvc.perform(get("/api/recommendations/user/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(100L));
-
-        assertEquals(1L, stubService.lastGetUserId);
     }
 
-    @Test
-    void testDeleteRecommendation_Success() throws Exception {
-        stubService.deleteByIdResult = true;
+    // ── DELETE ────────────────────────────────────────────────────────────
 
-        mockMvc.perform(delete("/api/recommendations/100"))
+    @Test
+    @WithMockUser(roles = {"PATIENT"})
+    @DisplayName("DELETE /api/recommendations/100 when exists → 200")
+    void testDeleteRecommendation_Success() throws Exception {
+        when(recommendationService.deleteById(100L)).thenReturn(true);
+
+        mockMvc.perform(delete("/api/recommendations/100").with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(content().string("Recommendation deleted successfully"));
-
-        assertEquals(100L, stubService.lastDeleteId);
     }
 
     @Test
+    @WithMockUser(roles = {"PATIENT"})
+    @DisplayName("DELETE /api/recommendations/100 when not found → 404")
     void testDeleteRecommendation_NotFound() throws Exception {
-        stubService.deleteByIdResult = false;
+        when(recommendationService.deleteById(100L)).thenReturn(false);
 
-        mockMvc.perform(delete("/api/recommendations/100"))
+        mockMvc.perform(delete("/api/recommendations/100").with(csrf()))
                 .andExpect(status().isNotFound())
                 .andExpect(content().string("Recommendation not found with id: 100"));
-
-        assertEquals(100L, stubService.lastDeleteId);
     }
 
     @Test
+    @WithMockUser(roles = {"PATIENT"})
+    @DisplayName("DELETE /api/recommendations/user/1/all → clears all")
     void testClearAllRecommendations() throws Exception {
-        stubService.deleteAllByUserIdResult = 5;
+        when(recommendationService.deleteAllByUserId(1L)).thenReturn(5);
 
-        mockMvc.perform(delete("/api/recommendations/user/1/all"))
+        mockMvc.perform(delete("/api/recommendations/user/1/all").with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(content().string("Cleared 5 recommendations for user 1"));
-
-        assertEquals(1L, stubService.lastClearUserId);
     }
 }

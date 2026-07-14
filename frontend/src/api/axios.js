@@ -40,14 +40,73 @@ api.interceptors.request.use(
 );
 
 /* ================= RESPONSE INTERCEPTOR ================= */
+// FIX #11: Transparently refresh expired access tokens instead of silently failing.
+// On 401 → attempt POST /auth/refresh-token → update localStorage → retry original request.
+// If refresh also fails → clear storage and redirect to /login.
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach((p) => {
+    if (error) p.reject(error);
+    else p.resolve(token);
+  });
+  failedQueue = [];
+};
+
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config;
     const status = error.response?.status;
 
-    if (status === 401) {
-      console.warn("Unauthorized — token may be expired.");
-    } else if (status === 403) {
+    if (status === 401 && !originalRequest._retry) {
+      // Prevent infinite retry loops
+      if (isRefreshing) {
+        // Queue subsequent 401s while a refresh is in progress
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then((token) => {
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return api(originalRequest);
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      const refreshToken = localStorage.getItem("refreshToken");
+
+      if (!refreshToken) {
+        // No refresh token available — force login
+        localStorage.clear();
+        window.location.href = "/login";
+        return Promise.reject(error);
+      }
+
+      try {
+        const { data } = await axios.post(`${getBaseURL()}/auth/refresh-token`, {
+          refreshToken,
+        });
+
+        const newAccessToken = data.accessToken;
+        localStorage.setItem("token", newAccessToken);
+
+        processQueue(null, newAccessToken);
+
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+        localStorage.clear();
+        window.location.href = "/login";
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
+    if (status === 403) {
       console.warn("Forbidden — insufficient permissions.");
     } else if (status >= 500) {
       console.error("Server error:", error.response?.data || error.message);
@@ -58,3 +117,4 @@ api.interceptors.response.use(
 );
 
 export default api;
+

@@ -8,8 +8,7 @@ import lombok.Data;
 @Data
 public class RecommendationRequestDto {
 
-    @NotNull(message = "User ID is required")
-    private Long userId;   // ID of the user requesting recommendation
+    private Long userId;   // ID of the user requesting recommendation (resolved on backend)
 
     @NotBlank(message = "Symptom must not be empty")
     @Size(max = 255, message = "Symptom must be less than 255 characters")

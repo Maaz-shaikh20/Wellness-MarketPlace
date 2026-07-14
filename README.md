@@ -11,9 +11,12 @@
 
 **[🌐 Live Demo](https://wellnest-marketplace.vercel.app)** &nbsp;|&nbsp; **[📖 API Docs](#-api-overview)** &nbsp;|&nbsp; **[🚀 Quick Start](#-quick-start)**
 
+> ⚠️ **Note:** The backend is hosted on Render's free tier. **The first request after inactivity may take 30–60 seconds** to wake up. If the page appears stuck on load, wait briefly and refresh — this is expected behaviour on the free plan, not a bug.
+
 *A production-ready, full-stack marketplace connecting patients with verified alternative therapy practitioners.*
 
 </div>
+
 
 ---
 

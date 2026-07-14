@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import Navbar from "../components/Navbar";
 
@@ -40,9 +41,17 @@ export default function AiRecommendation() {
   const [deletingId, setDeletingId] = useState(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
-  const user = JSON.parse(localStorage.getItem("user")) || { id: 1, name: "User" };
+  const navigate = useNavigate();
+
+  // FIX #19: If user is not in localStorage, redirect to /login immediately.
+  // The old code defaulted to { id: 1 } which could expose another user's recommendations.
+  const user = JSON.parse(localStorage.getItem("user"));
 
   useEffect(() => {
+    if (!user) {
+      navigate("/login", { replace: true });
+      return;
+    }
     fetchHistory();
   }, []);
 

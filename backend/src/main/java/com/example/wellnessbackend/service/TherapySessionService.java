@@ -1,5 +1,6 @@
 package com.example.wellnessbackend.service;
 import com.example.wellnessbackend.entity.CancelledBy;
+import com.example.wellnessbackend.entity.SessionStatus;
 import com.example.wellnessbackend.dto.TherapySessionDto;
 import com.example.wellnessbackend.entity.TherapySession;
 import com.example.wellnessbackend.repository.TherapySessionRepository;
@@ -31,14 +32,20 @@ public class TherapySessionService {
                 .orElse("");
     }
 
-    private static final String BOOKED = "BOOKED";
-    private static final String COMPLETED = "COMPLETED";
-    private static final String CANCELLED = "CANCELLED";
-    private static final String REJECTED = "REJECTED";
-    private static final String ACCEPTED = "ACCEPTED";
+    // FIX #7: Use type-safe SessionStatus enum constants
+    private static final SessionStatus BOOKED    = SessionStatus.BOOKED;
+    private static final SessionStatus COMPLETED = SessionStatus.COMPLETED;
+    private static final SessionStatus CANCELLED = SessionStatus.CANCELLED;
+    private static final SessionStatus REJECTED  = SessionStatus.REJECTED;
+    private static final SessionStatus ACCEPTED  = SessionStatus.ACCEPTED;
 
     // ------------------- Book a new therapy session -------------------
     public TherapySession bookSession(TherapySessionDto dto) {
+        // FIX #14: Validate that the session is not booked in the past
+        if (dto.getDateTime().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Cannot book sessions in the past. Please select a future date and time.");
+        }
+
         if (dto.getDateTime().getMinute() != 0) {
             throw new RuntimeException("Invalid slot. Please select a valid hourly slot.");
         }
@@ -108,15 +115,20 @@ public class TherapySessionService {
                 .orElseThrow(() -> new RuntimeException("Session not found"));
 
         if (dto.getStatus() != null) {
-            String newStatus = dto.getStatus().toUpperCase();
+            SessionStatus newStatus;
+            try {
+                newStatus = SessionStatus.valueOf(dto.getStatus().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new RuntimeException("Invalid status value: " + dto.getStatus());
+            }
 
-            if (CANCELLED.equalsIgnoreCase(session.getStatus()) || REJECTED.equalsIgnoreCase(session.getStatus())) {
+            if (CANCELLED == session.getStatus() || REJECTED == session.getStatus()) {
                 throw new RuntimeException("Cancelled/Rejected session cannot be updated");
             }
 
             session.setStatus(newStatus);
 
-            if (COMPLETED.equals(newStatus)) {
+            if (COMPLETED == newStatus) {
                 notificationService.createNotification(
                         session.getUserId(),
                         "SESSION_COMPLETED",
@@ -144,11 +156,11 @@ public class TherapySessionService {
         TherapySession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new RuntimeException("Session not found"));
 
-        if (COMPLETED.equalsIgnoreCase(session.getStatus())) {
+        if (COMPLETED == session.getStatus()) {
             throw new RuntimeException("Completed session cannot be cancelled");
         }
 
-        if (CANCELLED.equalsIgnoreCase(session.getStatus())) {
+        if (CANCELLED == session.getStatus()) {
             throw new RuntimeException("Session already cancelled");
         }
 
@@ -177,7 +189,7 @@ public class TherapySessionService {
         TherapySession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new RuntimeException("Session not found"));
 
-        if (!ACCEPTED.equalsIgnoreCase(session.getStatus())) {
+        if (!ACCEPTED.equals(session.getStatus())) {
             throw new RuntimeException("Only accepted sessions can be cancelled by user");
         }
 
@@ -204,7 +216,7 @@ public class TherapySessionService {
         TherapySession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new RuntimeException("Session not found"));
 
-        if (!BOOKED.equalsIgnoreCase(session.getStatus())) {
+        if (!BOOKED.equals(session.getStatus())) {
             throw new RuntimeException("Only booked sessions can be accepted");
         }
 
@@ -234,7 +246,7 @@ public class TherapySessionService {
         TherapySession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new RuntimeException("Session not found"));
 
-        if (!BOOKED.equalsIgnoreCase(session.getStatus())) {
+        if (!BOOKED.equals(session.getStatus())) {
             throw new RuntimeException("Only booked sessions can be rejected");
         }
 
@@ -261,7 +273,7 @@ public class TherapySessionService {
         TherapySession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new RuntimeException("Session not found"));
 
-        if (!BOOKED.equalsIgnoreCase(session.getStatus())) {
+        if (!BOOKED.equals(session.getStatus())) {
             throw new RuntimeException("Only booked sessions can be rejected");
         }
 
@@ -294,9 +306,10 @@ public class TherapySessionService {
         List<TherapySession> sessions = sessionRepository.findByPractitionerId(practitionerId);
 
         sessions.stream()
-                .filter(s -> s.getDateTime().toLocalDate().equals(date)
-                        && !CANCELLED.equalsIgnoreCase(s.getStatus())
-                        && !REJECTED.equalsIgnoreCase(s.getStatus()))
+                .filter(s ->
+                        s.getDateTime().toLocalDate().equals(date)
+                        && s.getStatus() != CANCELLED
+                        && s.getStatus() != REJECTED)
                 .forEach(s -> allSlots.remove(s.getDateTime()));
 
         return allSlots;
@@ -312,7 +325,8 @@ public class TherapySessionService {
         );
     }
     // ------------------- Get sessions by user & status -------------------
-    public List<TherapySession> getSessionsByUserAndStatus(Long userId, String status) {
+    public List<TherapySession> getSessionsByUserAndStatus(Long userId, String statusStr) {
+        SessionStatus status = SessionStatus.valueOf(statusStr.toUpperCase());
         return sessionRepository.findByUserIdAndStatus(userId, status);
     }
 

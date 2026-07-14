@@ -1,5 +1,6 @@
 package com.example.wellnessbackend.repository;
 
+import com.example.wellnessbackend.entity.SessionStatus;
 import com.example.wellnessbackend.entity.TherapySession;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -15,15 +16,16 @@ public interface TherapySessionRepository extends JpaRepository<TherapySession, 
 
     // Get all sessions for a practitioner
     List<TherapySession> findByPractitionerId(Long practitionerId);
-    // Get sessions for a user by status
-    List<TherapySession> findByUserIdAndStatus(Long userId, String status);
 
+    // Get sessions for a user by status (FIX #7: now uses SessionStatus enum)
+    List<TherapySession> findByUserIdAndStatus(Long userId, SessionStatus status);
 
-    // ✅ Slot is considered booked ONLY if status != CANCELLED
+    // Slot is considered booked ONLY if status != CANCELLED (FIX #7: now uses SessionStatus enum)
     boolean existsByTherapyIdAndPractitionerIdAndDateTimeAndStatusNot(
             Long therapyId,
             Long practitionerId,
             LocalDateTime dateTime,
-            String status
+            SessionStatus status
     );
 }
+
