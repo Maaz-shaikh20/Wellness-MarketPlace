@@ -62,11 +62,13 @@ public class CartService {
     }
 
     // DELETE → Remove one item
+    @Transactional
     public void deleteCartItem(Long cartItemId) {
         cartRepository.deleteById(cartItemId);
     }
 
     // DELETE → Clear full cart
+    @Transactional
     public void clearCart(Long userId) {
         cartRepository.deleteByUserId(userId);
     }
