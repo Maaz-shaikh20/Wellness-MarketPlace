@@ -1,11 +1,15 @@
 package com.example.wellnessbackend.service;
+
 import com.example.wellnessbackend.entity.CancelledBy;
 import com.example.wellnessbackend.entity.SessionStatus;
 import com.example.wellnessbackend.dto.TherapySessionDto;
 import com.example.wellnessbackend.entity.TherapySession;
+import com.example.wellnessbackend.repository.TherapyRepository;
 import com.example.wellnessbackend.repository.TherapySessionRepository;
 import com.example.wellnessbackend.repository.PractitionerProfileRepository;
+import com.example.wellnessbackend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,11 +21,15 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TherapySessionService {
 
     private final TherapySessionRepository sessionRepository;
     private final NotificationService notificationService;
     private final PractitionerProfileRepository practitionerProfileRepository;
+    private final UserRepository userRepository;
+    private final TherapyRepository therapyRepository;
+    private final EmailService emailService;
 
     // ------------------- Helper: get clinic address -------------------
     private String getClinicAddress(Long practitionerId) {
@@ -33,11 +41,11 @@ public class TherapySessionService {
     }
 
     // FIX #7: Use type-safe SessionStatus enum constants
-    private static final SessionStatus BOOKED    = SessionStatus.BOOKED;
+    private static final SessionStatus BOOKED = SessionStatus.BOOKED;
     private static final SessionStatus COMPLETED = SessionStatus.COMPLETED;
     private static final SessionStatus CANCELLED = SessionStatus.CANCELLED;
-    private static final SessionStatus REJECTED  = SessionStatus.REJECTED;
-    private static final SessionStatus ACCEPTED  = SessionStatus.ACCEPTED;
+    private static final SessionStatus REJECTED = SessionStatus.REJECTED;
+    private static final SessionStatus ACCEPTED = SessionStatus.ACCEPTED;
 
     // ------------------- Book a new therapy session -------------------
     public TherapySession bookSession(TherapySessionDto dto) {
@@ -52,20 +60,17 @@ public class TherapySessionService {
 
         List<LocalDateTime> availableSlots = getAvailableSlots(
                 dto.getPractitionerId(),
-                dto.getDateTime().toLocalDate().toString()
-        );
+                dto.getDateTime().toLocalDate().toString());
 
         if (!availableSlots.contains(dto.getDateTime())) {
             throw new RuntimeException("Selected slot is no longer available");
         }
 
-        boolean alreadyBooked =
-                sessionRepository.existsByTherapyIdAndPractitionerIdAndDateTimeAndStatusNot(
-                        dto.getTherapyId(),
-                        dto.getPractitionerId(),
-                        dto.getDateTime(),
-                        CANCELLED
-                );
+        boolean alreadyBooked = sessionRepository.existsByTherapyIdAndPractitionerIdAndDateTimeAndStatusNot(
+                dto.getTherapyId(),
+                dto.getPractitionerId(),
+                dto.getDateTime(),
+                CANCELLED);
 
         if (alreadyBooked) {
             throw new RuntimeException("This slot is already booked");
@@ -87,14 +92,68 @@ public class TherapySessionService {
         notificationService.createNotification(
                 session.getUserId(),
                 "SESSION_BOOKED",
-                "Your session is booked for " + session.getDateTime() + address
-        );
+                "Your session is booked for " + session.getDateTime() + address);
 
         notificationService.createNotification(
                 session.getPractitionerId(),
                 "SESSION_BOOKED",
-                "You have a new session at " + session.getDateTime() + address
-        );
+                "You have a new session at " + session.getDateTime() + address);
+
+        // ── Email notifications (non-blocking: failures logged, never thrown) ──
+        final TherapySession savedSession = session;
+        try {
+            // Look up patient
+            String patientEmail = userRepository.findById(savedSession.getUserId())
+                    .map(u -> u.getEmail()).orElse(null);
+            String patientName = userRepository.findById(savedSession.getUserId())
+                    .map(u -> u.getName() != null ? u.getName() : "Patient").orElse("Patient");
+
+            // Look up practitioner user (for name + email)
+            String practitionerEmail = userRepository.findById(savedSession.getPractitionerId())
+                    .map(u -> u.getEmail()).orElse(null);
+            String practitionerName = userRepository.findById(savedSession.getPractitionerId())
+                    .map(u -> u.getName() != null ? u.getName() : "Practitioner").orElse("Practitioner");
+
+            // Look up practitioner profile (for specialization + clinic address)
+            String specialization = practitionerProfileRepository.findByUserId(savedSession.getPractitionerId())
+                    .map(p -> p.getSpecialization() != null ? p.getSpecialization() : "").orElse("");
+            String clinicAddress = practitionerProfileRepository.findByUserId(savedSession.getPractitionerId())
+                    .map(p -> p.getClinicAddress() != null ? p.getClinicAddress() : "").orElse("");
+
+            // Look up therapy name
+            String therapyName = therapyRepository.findById(savedSession.getTherapyId())
+                    .map(t -> t.getName() != null ? t.getName() : "Therapy").orElse("Therapy");
+
+            String dateTimeStr = savedSession.getDateTime().toString().replace("T", " at ");
+
+            // Send to patient
+            if (patientEmail != null) {
+                emailService.sendSessionBookingConfirmationToPatient(
+                        patientEmail,
+                        patientName,
+                        therapyName,
+                        practitionerName,
+                        specialization,
+                        clinicAddress,
+                        dateTimeStr,
+                        savedSession.getNotes()
+                );
+            }
+
+            // Send to practitioner
+            if (practitionerEmail != null) {
+                emailService.sendNewSessionNotificationToPractitioner(
+                        practitionerEmail,
+                        practitionerName,
+                        patientName,
+                        therapyName,
+                        dateTimeStr,
+                        savedSession.getNotes()
+                );
+            }
+        } catch (Exception e) {
+            log.error("⚠️ Email notification failed for session {}: {}", savedSession.getId(), e.getMessage());
+        }
 
         return session;
     }
@@ -132,14 +191,31 @@ public class TherapySessionService {
                 notificationService.createNotification(
                         session.getUserId(),
                         "SESSION_COMPLETED",
-                        "Your session on " + session.getDateTime() + " is completed"
-                );
+                        "Your session on " + session.getDateTime() + " is completed");
 
                 notificationService.createNotification(
                         session.getPractitionerId(),
                         "SESSION_COMPLETED",
-                        "You completed a session on " + session.getDateTime()
-                );
+                        "You completed a session on " + session.getDateTime());
+
+                // ── Email notifications for COMPLETED ──
+                final TherapySession completedSession = session;
+                try {
+                    SessionContext ctx = extractSessionContext(completedSession);
+                    String dtStr = completedSession.getDateTime().toString().replace("T", " at ");
+                    if (ctx.patientEmail != null) {
+                        emailService.sendSessionCompletedToPatient(
+                                ctx.patientEmail, ctx.patientName,
+                                ctx.therapyName, ctx.practitionerName, dtStr);
+                    }
+                    if (ctx.practitionerEmail != null) {
+                        emailService.sendSessionCompletedToPractitioner(
+                                ctx.practitionerEmail, ctx.practitionerName,
+                                ctx.patientName, ctx.therapyName, dtStr);
+                    }
+                } catch (Exception e) {
+                    log.error("⚠️ Email notification failed for completed session {}: {}", completedSession.getId(), e.getMessage());
+                }
             }
         }
 
@@ -172,18 +248,37 @@ public class TherapySessionService {
         notificationService.createNotification(
                 session.getUserId(),
                 "SESSION_CANCELLED",
-                "Your session on " + session.getDateTime() + " has been cancelled" + address
-        );
+                "Your session on " + session.getDateTime() + " has been cancelled" + address);
 
         notificationService.createNotification(
                 session.getPractitionerId(),
                 "SESSION_CANCELLED",
-                "Session on " + session.getDateTime() + " has been cancelled" + address
-        );
+                "Session on " + session.getDateTime() + " has been cancelled" + address);
+
+        // ── Email notifications ──
+        final TherapySession cancelledSession = session;
+        try {
+            SessionContext ctx = extractSessionContext(cancelledSession);
+            String dtStr = cancelledSession.getDateTime().toString().replace("T", " at ");
+            if (ctx.patientEmail != null) {
+                emailService.sendSessionCancelledToPatient(
+                        ctx.patientEmail, ctx.patientName,
+                        ctx.therapyName, ctx.practitionerName, dtStr);
+            }
+            if (ctx.practitionerEmail != null) {
+                emailService.sendSessionCancelledToPractitioner(
+                        ctx.practitionerEmail, ctx.practitionerName,
+                        ctx.patientName, ctx.therapyName, dtStr, null);
+            }
+        } catch (Exception e) {
+            log.error("⚠️ Email notification failed for cancelled session {}: {}", cancelledSession.getId(), e.getMessage());
+        }
 
         return session;
     }
-    // ------------------- Cancel accepted session by user with reason -------------------
+
+    // ------------------- Cancel accepted session by user with reason
+    // -------------------
     @Transactional
     public TherapySession cancelSessionByUser(Long sessionId, String reason) {
         TherapySession session = sessionRepository.findById(sessionId)
@@ -204,8 +299,21 @@ public class TherapySessionService {
         notificationService.createNotification(
                 session.getPractitionerId(),
                 "SESSION_CANCELLED",
-                "Session on " + session.getDateTime() + " was cancelled by user. Reason: " + reason + address
-        );
+                "Session on " + session.getDateTime() + " was cancelled by user. Reason: " + reason + address);
+
+        // ── Email notification to practitioner ──
+        final TherapySession cancelledByUserSession = session;
+        try {
+            SessionContext ctx = extractSessionContext(cancelledByUserSession);
+            String dtStr = cancelledByUserSession.getDateTime().toString().replace("T", " at ");
+            if (ctx.practitionerEmail != null) {
+                emailService.sendSessionCancelledToPractitioner(
+                        ctx.practitionerEmail, ctx.practitionerName,
+                        ctx.patientName, ctx.therapyName, dtStr, reason);
+            }
+        } catch (Exception e) {
+            log.error("⚠️ Email notification failed for user-cancelled session {}: {}", cancelledByUserSession.getId(), e.getMessage());
+        }
 
         return session;
     }
@@ -228,14 +336,27 @@ public class TherapySessionService {
         notificationService.createNotification(
                 session.getUserId(),
                 "SESSION_ACCEPTED",
-                "Your session on " + session.getDateTime() + " has been accepted" + address
-        );
+                "Your session on " + session.getDateTime() + " has been accepted" + address);
 
         notificationService.createNotification(
                 session.getPractitionerId(),
                 "SESSION_ACCEPTED",
-                "You have accepted the session on " + session.getDateTime() + address
-        );
+                "You have accepted the session on " + session.getDateTime() + address);
+
+        // ── Email notification to patient ──
+        final TherapySession acceptedSession = session;
+        try {
+            SessionContext ctx = extractSessionContext(acceptedSession);
+            String dtStr = acceptedSession.getDateTime().toString().replace("T", " at ");
+            if (ctx.patientEmail != null) {
+                emailService.sendSessionAcceptedToPatient(
+                        ctx.patientEmail, ctx.patientName,
+                        ctx.therapyName, ctx.practitionerName,
+                        ctx.specialization, ctx.clinicAddress, dtStr);
+            }
+        } catch (Exception e) {
+            log.error("⚠️ Email notification failed for accepted session {}: {}", acceptedSession.getId(), e.getMessage());
+        }
 
         return session;
     }
@@ -256,18 +377,32 @@ public class TherapySessionService {
         notificationService.createNotification(
                 session.getUserId(),
                 "SESSION_REJECTED",
-                "Your session on " + session.getDateTime() + " has been rejected"
-        );
+                "Your session on " + session.getDateTime() + " has been rejected");
 
         notificationService.createNotification(
                 session.getPractitionerId(),
                 "SESSION_REJECTED",
-                "You have rejected the session on " + session.getDateTime()
-        );
+                "You have rejected the session on " + session.getDateTime());
+
+        // ── Email notification to patient ──
+        final TherapySession rejectedSession = session;
+        try {
+            SessionContext ctx = extractSessionContext(rejectedSession);
+            String dtStr = rejectedSession.getDateTime().toString().replace("T", " at ");
+            if (ctx.patientEmail != null) {
+                emailService.sendSessionRejectedToPatient(
+                        ctx.patientEmail, ctx.patientName,
+                        ctx.therapyName, ctx.practitionerName, dtStr, null);
+            }
+        } catch (Exception e) {
+            log.error("⚠️ Email notification failed for rejected session {}: {}", rejectedSession.getId(), e.getMessage());
+        }
 
         return session;
     }
-    // ------------------- Reject session with reason (Practitioner) -------------------
+
+    // ------------------- Reject session with reason (Practitioner)
+    // -------------------
     @Transactional
     public TherapySession rejectSession(Long sessionId, String reason) {
         TherapySession session = sessionRepository.findById(sessionId)
@@ -288,10 +423,49 @@ public class TherapySessionService {
         notificationService.createNotification(
                 session.getUserId(),
                 "SESSION_REJECTED",
-                "Your session on " + session.getDateTime() + " was rejected. Reason: " + reason + address
-        );
+                "Your session on " + session.getDateTime() + " was rejected. Reason: " + reason + address);
+
+        // ── Email notification to patient (with reason) ──
+        final TherapySession rejectedWithReasonSession = session;
+        try {
+            SessionContext ctx = extractSessionContext(rejectedWithReasonSession);
+            String dtStr = rejectedWithReasonSession.getDateTime().toString().replace("T", " at ");
+            if (ctx.patientEmail != null) {
+                emailService.sendSessionRejectedToPatient(
+                        ctx.patientEmail, ctx.patientName,
+                        ctx.therapyName, ctx.practitionerName, dtStr, reason);
+            }
+        } catch (Exception e) {
+            log.error("⚠️ Email notification failed for rejected session {}: {}", rejectedWithReasonSession.getId(), e.getMessage());
+        }
 
         return session;
+    }
+
+    // ------------------- Internal: extract common session context -------------------
+    private SessionContext extractSessionContext(TherapySession session) {
+        SessionContext ctx = new SessionContext();
+        ctx.patientEmail = userRepository.findById(session.getUserId())
+                .map(u -> u.getEmail()).orElse(null);
+        ctx.patientName = userRepository.findById(session.getUserId())
+                .map(u -> u.getName() != null ? u.getName() : "Patient").orElse("Patient");
+        ctx.practitionerEmail = userRepository.findById(session.getPractitionerId())
+                .map(u -> u.getEmail()).orElse(null);
+        ctx.practitionerName = userRepository.findById(session.getPractitionerId())
+                .map(u -> u.getName() != null ? u.getName() : "Practitioner").orElse("Practitioner");
+        ctx.specialization = practitionerProfileRepository.findByUserId(session.getPractitionerId())
+                .map(p -> p.getSpecialization() != null ? p.getSpecialization() : "").orElse("");
+        ctx.clinicAddress = practitionerProfileRepository.findByUserId(session.getPractitionerId())
+                .map(p -> p.getClinicAddress() != null ? p.getClinicAddress() : "").orElse("");
+        ctx.therapyName = therapyRepository.findById(session.getTherapyId())
+                .map(t -> t.getName() != null ? t.getName() : "Therapy").orElse("Therapy");
+        return ctx;
+    }
+
+    private static class SessionContext {
+        String patientEmail, patientName;
+        String practitionerEmail, practitionerName;
+        String specialization, clinicAddress, therapyName;
     }
 
     // ------------------- Get available slots -------------------
@@ -306,8 +480,7 @@ public class TherapySessionService {
         List<TherapySession> sessions = sessionRepository.findByPractitionerId(practitionerId);
 
         sessions.stream()
-                .filter(s ->
-                        s.getDateTime().toLocalDate().equals(date)
+                .filter(s -> s.getDateTime().toLocalDate().equals(date)
                         && s.getStatus() != CANCELLED
                         && s.getStatus() != REJECTED)
                 .forEach(s -> allSlots.remove(s.getDateTime()));
@@ -321,15 +494,13 @@ public class TherapySessionService {
                 therapyId,
                 practitionerId,
                 dateTime,
-                CANCELLED
-        );
+                CANCELLED);
     }
+
     // ------------------- Get sessions by user & status -------------------
     public List<TherapySession> getSessionsByUserAndStatus(Long userId, String statusStr) {
         SessionStatus status = SessionStatus.valueOf(statusStr.toUpperCase());
         return sessionRepository.findByUserIdAndStatus(userId, status);
     }
-
-
 
 }

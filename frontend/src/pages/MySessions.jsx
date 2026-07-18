@@ -13,6 +13,8 @@ import {
   User,
   CheckCircle,
   X,
+  Send,
+  MessageCircle,
 } from "lucide-react";
 
 /* ---- Inline Toast ---- */
@@ -44,6 +46,9 @@ export default function MySessions() {
   const [cancelReason, setCancelReason] = useState("");
   const [activeCancelId, setActiveCancelId] = useState(null);
   const [toast, setToast] = useState(null);
+
+  // Rating state: sessionId -> { rated, rating, comment, hoveredStar, submitting, open, draftRating, draftComment }
+  const [ratingMap, setRatingMap] = useState({});
 
   const user = JSON.parse(localStorage.getItem("user") || "null");
   const userId = user?.id;
@@ -99,6 +104,35 @@ export default function MySessions() {
         );
 
         setSessions(hydratedSessions);
+
+        // ── Pre-check ratings for all COMPLETED sessions ──
+        const completedSessions = hydratedSessions.filter(
+          (s) => s.status?.toUpperCase() === "COMPLETED"
+        );
+        const ratingChecks = await Promise.all(
+          completedSessions.map(async (s) => {
+            try {
+              const r = await api.get(`/session-ratings/session/${s.id}/user/${userId}`);
+              return { id: s.id, data: r.data };
+            } catch {
+              return { id: s.id, data: { rated: false } };
+            }
+          })
+        );
+        const initialRatingMap = {};
+        ratingChecks.forEach(({ id, data }) => {
+          initialRatingMap[id] = {
+            rated: data.rated || false,
+            rating: data.rating || 0,
+            comment: data.comment || "",
+            open: false,
+            draftRating: 0,
+            draftComment: "",
+            hoveredStar: 0,
+            submitting: false,
+          };
+        });
+        setRatingMap(initialRatingMap);
       } catch (err) {
         console.error("Error fetching session data:", err);
         showToast("Failed to load sessions. Please refresh.", "error");
@@ -151,6 +185,44 @@ export default function MySessions() {
     }
   };
 
+  // ── Rating helpers ──
+  const updateRating = (sessionId, patch) => {
+    setRatingMap((prev) => ({
+      ...prev,
+      [sessionId]: { ...prev[sessionId], ...patch },
+    }));
+  };
+
+  const submitRating = async (session) => {
+    const rm = ratingMap[session.id];
+    if (!rm?.draftRating) {
+      showToast("Please select a star rating.", "error");
+      return;
+    }
+    updateRating(session.id, { submitting: true });
+    try {
+      await api.post("/session-ratings", {
+        sessionId: session.id,
+        userId,
+        practitionerId: session.practitionerId,
+        rating: rm.draftRating,
+        comment: rm.draftComment,
+      });
+      updateRating(session.id, {
+        rated: true,
+        rating: rm.draftRating,
+        comment: rm.draftComment,
+        open: false,
+        submitting: false,
+      });
+      showToast("Rating submitted! Thank you ⭐");
+    } catch (err) {
+      const msg = err.response?.data?.message || "Failed to submit rating.";
+      showToast(msg, "error");
+      updateRating(session.id, { submitting: false });
+    }
+  };
+
   const filterSessions = (statusList) =>
     sessions.filter((s) => statusList.includes(s.status?.toUpperCase()));
 
@@ -198,6 +270,12 @@ export default function MySessions() {
           <h1 className="text-6xl font-black uppercase italic">
             My <span className="text-[#FF004D]">Sessions</span>
           </h1>
+          <button
+            onClick={() => navigate("/progress")}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-violet-600 text-white text-xs font-black uppercase tracking-widest hover:bg-violet-700 transition-all shadow-lg"
+          >
+            📊 View Progress Tracker
+          </button>
         </header>
 
         <div className="space-y-32">
@@ -210,6 +288,9 @@ export default function MySessions() {
             setActiveCancelId={setActiveCancelId}
             cancelReason={cancelReason}
             setCancelReason={setCancelReason}
+            ratingMap={ratingMap}
+            updateRating={updateRating}
+            submitRating={submitRating}
           />
           <SessionSection
             title="Accepted"
@@ -220,6 +301,9 @@ export default function MySessions() {
             setActiveCancelId={setActiveCancelId}
             cancelReason={cancelReason}
             setCancelReason={setCancelReason}
+            ratingMap={ratingMap}
+            updateRating={updateRating}
+            submitRating={submitRating}
           />
           <SessionSection
             title="Completed / Archive"
@@ -230,6 +314,9 @@ export default function MySessions() {
             setActiveCancelId={setActiveCancelId}
             cancelReason={cancelReason}
             setCancelReason={setCancelReason}
+            ratingMap={ratingMap}
+            updateRating={updateRating}
+            submitRating={submitRating}
           />
         </div>
       </div>
@@ -247,6 +334,9 @@ function SessionSection({
   setActiveCancelId,
   cancelReason,
   setCancelReason,
+  ratingMap = {},
+  updateRating,
+  submitRating,
 }) {
   const formatDateTime = (dateStr) => {
     const d = new Date(dateStr);
@@ -343,6 +433,18 @@ function SessionSection({
                     </div>
                   </div>
 
+                  {/* ── CHAT BUTTON (ACCEPTED only) ── */}
+                  {s.status?.toUpperCase() === "ACCEPTED" && (
+                    <div className="pt-3 border-t border-white/10">
+                      <button
+                        onClick={() => navigate(`/chat/${s.id}`)}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-500 hover:bg-blue-400 text-white text-[10px] font-black uppercase tracking-widest transition-all hover:scale-[1.03]"
+                      >
+                        <MessageCircle size={13} /> Chat with Practitioner
+                      </button>
+                    </div>
+                  )}
+
                   {s.notes && (
                     <div className="flex items-start gap-2 pt-2 border-t border-white/5">
                       <FileText size={12} className="mt-1 text-white/40" />
@@ -360,6 +462,103 @@ function SessionSection({
                       </p>
                     </div>
                   )}
+
+                  {/* ── STAR RATING SECTION (COMPLETED only) ── */}
+                  {s.status?.toUpperCase() === "COMPLETED" && (() => {
+                    const rm = ratingMap[s.id];
+                    if (!rm) return null;
+
+                    if (rm.rated) {
+                      // Show submitted rating
+                      return (
+                        <div className="pt-3 border-t border-white/10">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-amber-300 mb-1">Your Rating</p>
+                          <div className="flex items-center gap-1">
+                            {[1,2,3,4,5].map((star) => (
+                              <Star
+                                key={star}
+                                size={16}
+                                className={star <= rm.rating ? "text-amber-400 fill-amber-400" : "text-white/20"}
+                              />
+                            ))}
+                            <span className="ml-2 text-xs text-white/60">{rm.rating}/5</span>
+                          </div>
+                          {rm.comment && (
+                            <p className="text-[11px] italic text-white/50 mt-1">&ldquo;{rm.comment}&rdquo;</p>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    if (!rm.open) {
+                      return (
+                        <div className="pt-3 border-t border-white/10">
+                          <button
+                            onClick={() => updateRating(s.id, { open: true })}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-amber-400 transition-all"
+                          >
+                            <Star size={12} className="fill-white" /> Rate This Session
+                          </button>
+                        </div>
+                      );
+                    }
+
+                    // Open rating form
+                    return (
+                      <div className="pt-3 border-t border-white/10 space-y-3">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-amber-300">Rate your experience</p>
+                        {/* Stars */}
+                        <div className="flex items-center gap-1">
+                          {[1,2,3,4,5].map((star) => (
+                            <button
+                              key={star}
+                              onMouseEnter={() => updateRating(s.id, { hoveredStar: star })}
+                              onMouseLeave={() => updateRating(s.id, { hoveredStar: 0 })}
+                              onClick={() => updateRating(s.id, { draftRating: star })}
+                              className="transition-transform hover:scale-125"
+                            >
+                              <Star
+                                size={22}
+                                className={
+                                  star <= (rm.hoveredStar || rm.draftRating)
+                                    ? "text-amber-400 fill-amber-400"
+                                    : "text-white/30"
+                                }
+                              />
+                            </button>
+                          ))}
+                          {rm.draftRating > 0 && (
+                            <span className="ml-2 text-xs text-amber-300 font-bold">{rm.draftRating}/5</span>
+                          )}
+                        </div>
+                        {/* Comment */}
+                        <textarea
+                          value={rm.draftComment}
+                          onChange={(e) => updateRating(s.id, { draftComment: e.target.value })}
+                          placeholder="Share your experience (optional)..."
+                          rows={2}
+                          className="w-full p-2 rounded-xl text-xs text-[#1B3C53] outline-none resize-none"
+                        />
+                        {/* Actions */}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => submitRating(s)}
+                            disabled={rm.submitting || !rm.draftRating}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-amber-400 disabled:opacity-50 transition-all"
+                          >
+                            <Send size={10} />
+                            {rm.submitting ? "Submitting..." : "Submit"}
+                          </button>
+                          <button
+                            onClick={() => updateRating(s.id, { open: false, draftRating: 0, draftComment: "", hoveredStar: 0 })}
+                            className="px-3 py-1.5 rounded-xl bg-white/10 text-white/70 text-[10px] font-bold uppercase tracking-widest hover:bg-white/20 transition-all"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             );

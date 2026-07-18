@@ -1,26 +1,34 @@
 package com.example.wellnessbackend.service;
 import com.example.wellnessbackend.entity.Cart;
 import com.example.wellnessbackend.repository.CartRepository;
+import com.example.wellnessbackend.repository.ProductRepository;
+import com.example.wellnessbackend.repository.UserRepository;
 import com.example.wellnessbackend.dto.OrderCreateDto;
 import com.example.wellnessbackend.dto.OrderResponseDto;
 import com.example.wellnessbackend.entity.Order;
 import com.example.wellnessbackend.entity.OrderItem;
 import com.example.wellnessbackend.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OrderService {
 
     private final OrderRepository orderRepository;
     private final CartRepository cartRepository;
+    private final UserRepository userRepository;
+    private final ProductRepository productRepository;
+    private final EmailService emailService;
 
     @Transactional
     public OrderResponseDto createOrder(OrderCreateDto dto) {
@@ -69,6 +77,40 @@ public class OrderService {
         order.setTotalAmount(totalAmount);
 
         Order savedOrder = orderRepository.save(order);
+
+        // ── Order confirmation email (non-blocking) ──
+        try {
+            String userEmail = userRepository.findById(dto.getUserId())
+                    .map(u -> u.getEmail()).orElse(null);
+            String userName = userRepository.findById(dto.getUserId())
+                    .map(u -> u.getName() != null ? u.getName() : "Customer").orElse("Customer");
+
+            if (userEmail != null) {
+                List<String[]> emailItems = new ArrayList<>();
+                for (OrderItem item : savedOrder.getOrderItems()) {
+                    String itemName = productRepository.findById(item.getItemId())
+                            .map(p -> p.getName()).orElse(item.getItemType() + " #" + item.getItemId());
+                    emailItems.add(new String[]{
+                            itemName,
+                            String.valueOf(item.getQuantity()),
+                            item.getUnitPrice().toPlainString(),
+                            item.getTotalPrice().toPlainString()
+                    });
+                }
+                emailService.sendOrderConfirmationEmail(
+                        userEmail,
+                        userName,
+                        savedOrder.getId(),
+                        emailItems,
+                        savedOrder.getTotalAmount().toPlainString(),
+                        savedOrder.getDeliveryAddress(),
+                        savedOrder.getPhoneNumber(),
+                        savedOrder.getDeliveryMessage()
+                );
+            }
+        } catch (Exception e) {
+            log.error("⚠️ Order confirmation email failed for order {}: {}", savedOrder.getId(), e.getMessage());
+        }
 
         return mapToResponse(savedOrder);
     }
@@ -160,8 +202,40 @@ public class OrderService {
 
         Order savedOrder = orderRepository.save(order);
 
-        // ✅ clear cart after order
+        // ── Clear cart after order ──
         cartRepository.deleteByUserId(userId);
+
+        // ── Order confirmation email (non-blocking) ──
+        try {
+            String userEmail = userRepository.findById(userId)
+                    .map(u -> u.getEmail()).orElse(null);
+            String userName = userRepository.findById(userId)
+                    .map(u -> u.getName() != null ? u.getName() : "Customer").orElse("Customer");
+
+            if (userEmail != null) {
+                List<String[]> emailItems = new ArrayList<>();
+                for (Cart cartItem : cartItems) {
+                    emailItems.add(new String[]{
+                            cartItem.getProduct().getName(),
+                            String.valueOf(cartItem.getQuantity()),
+                            String.valueOf(cartItem.getProduct().getPrice()),
+                            String.valueOf(cartItem.getProduct().getPrice() * cartItem.getQuantity())
+                    });
+                }
+                emailService.sendOrderConfirmationEmail(
+                        userEmail,
+                        userName,
+                        savedOrder.getId(),
+                        emailItems,
+                        savedOrder.getTotalAmount().toPlainString(),
+                        savedOrder.getDeliveryAddress(),
+                        savedOrder.getPhoneNumber(),
+                        savedOrder.getDeliveryMessage()
+                );
+            }
+        } catch (Exception e) {
+            log.error("⚠️ Order confirmation email failed for order {}: {}", savedOrder.getId(), e.getMessage());
+        }
 
         return mapToResponse(savedOrder);
     }

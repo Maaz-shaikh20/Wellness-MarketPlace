@@ -59,8 +59,7 @@ public class TherapySessionServiceTest {
     void testBookSession_PastDate_Throws() {
         validDto.setDateTime(LocalDateTime.now().minusDays(1));
 
-        RuntimeException ex = assertThrows(RuntimeException.class, () ->
-                therapySessionService.bookSession(validDto));
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> therapySessionService.bookSession(validDto));
 
         assertTrue(ex.getMessage().contains("past"),
                 "Error should mention 'past', got: " + ex.getMessage());
@@ -71,8 +70,7 @@ public class TherapySessionServiceTest {
     void testBookSession_NonHourlySlot_Throws() {
         validDto.setDateTime(LocalDateTime.now().plusDays(1).withMinute(30).withSecond(0));
 
-        RuntimeException ex = assertThrows(RuntimeException.class, () ->
-                therapySessionService.bookSession(validDto));
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> therapySessionService.bookSession(validDto));
 
         assertTrue(ex.getMessage().toLowerCase().contains("slot") || ex.getMessage().toLowerCase().contains("hourly"),
                 "Error should mention slot/hourly, got: " + ex.getMessage());

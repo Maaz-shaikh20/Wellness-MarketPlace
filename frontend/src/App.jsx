@@ -29,6 +29,8 @@ import ProductDetail from "./pages/ProductDetail";
 import AiRecommendation from "./pages/AiRecommendation";
 import Notifications from "./pages/Notifications";
 import Community from "./pages/Community";
+import ProgressTracker from "./pages/ProgressTracker";
+import ChatPage from "./pages/ChatPage";
 
 /* ========= PAYMENT ========= */
 import CheckoutPage from "./pages/payment/CheckoutPage";
@@ -109,6 +111,8 @@ function AnimatedRoutes() {
           <Route path="/notifications" element={<PrivateRoute><Notifications /></PrivateRoute>} />
           <Route path="/activity" element={<PrivateRoute><Activity /></PrivateRoute>} />
           <Route path="/my-sessions" element={<PrivateRoute><MySessions /></PrivateRoute>} />
+          <Route path="/progress" element={<PrivateRoute><ProgressTracker /></PrivateRoute>} />
+          <Route path="/chat/:sessionId" element={<PrivateRoute><ChatPage /></PrivateRoute>} />
           <Route path="/book-therapy" element={<PrivateRoute><BookTherapy /></PrivateRoute>} />
           <Route path="/book-session/:id" element={<PrivateRoute><BookSession /></PrivateRoute>} />
           <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />

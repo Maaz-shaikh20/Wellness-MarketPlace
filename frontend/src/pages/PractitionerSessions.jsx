@@ -341,6 +341,18 @@ export default function PractitionerSessions() {
               <p className="text-sm text-red-700 italic">"{s.rejectedReason}"</p>
             </div>
           )}
+
+          {/* ── CHAT BUTTON (ACCEPTED sessions only) ── */}
+          {s.status === "ACCEPTED" && (
+            <div className="mt-4">
+              <button
+                onClick={() => navigate(`/chat/${s.id}`)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-black uppercase tracking-widest transition-all hover:scale-[1.02] shadow-sm"
+              >
+                <MessageSquare size={14} /> Chat with Patient
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Expand toggle */}
