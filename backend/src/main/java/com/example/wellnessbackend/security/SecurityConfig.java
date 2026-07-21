@@ -111,6 +111,13 @@ public class SecurityConfig {
                         ).permitAll()
 
                         // ======================
+                        // SESSIONS (PUBLIC: slot availability)
+                        // ======================
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/sessions/available-slots"
+                        ).permitAll()
+
+                        // ======================
                         // PRODUCTS
                         // ======================
                         .requestMatchers(HttpMethod.GET,

@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -186,5 +187,17 @@ public class TherapySessionController {
         );
     }
 
+    // ------------------- Get available slots for a practitioner on a date -------------------
+    @GetMapping("/available-slots")
+    public ResponseEntity<?> getAvailableSlots(
+            @RequestParam Long practitionerId,
+            @RequestParam String date) {
+        try {
+            List<LocalDateTime> slots = sessionService.getAvailableSlots(practitionerId, date);
+            return ResponseEntity.ok(slots);
+        } catch (Exception ex) {
+            return ResponseEntity.badRequest().body(Map.of("message", ex.getMessage()));
+        }
+    }
 
 }
