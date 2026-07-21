@@ -50,7 +50,8 @@ public class SecurityConfig {
                                 "/api/auth/register",
                                 "/api/auth/refresh-token",
                                 "/api/auth/forgot-password",
-                                "/api/auth/reset-password"
+                                "/api/auth/reset-password",
+                                "/api/auth/google"
                         ).permitAll()
 
                         // ======================

@@ -26,6 +26,9 @@ public class User {
 
     private String bio;
 
+    @Column(name = "google_id")
+    private String googleId;  // set for Google OAuth users; null for email/password users
+
     @Column(nullable = false)
     private boolean verified = false;  // default false
 

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import { useCart } from "../context/CartContext";
+import { GoogleLogin } from "@react-oauth/google";
 
 const roles = [
   {
@@ -51,6 +52,33 @@ export default function Signup() {
       setTimeout(() => navigate("/login"), 1500);
     } catch (err) {
       setError(err.response?.data?.message || "Signup failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ── Google Sign-Up/Login handler ──
+  const handleGoogleLogin = async (credentialResponse) => {
+    setLoading(true);
+    setError("");
+    setSuccess("");
+    try {
+      const res = await api.post("/auth/google", { credential: credentialResponse.credential });
+      const token = res.data?.accessToken;
+      const role  = res.data?.role;
+      if (!token || !role) throw new Error("Invalid Google login response");
+
+      localStorage.setItem("token", token);
+      localStorage.setItem("role",  role);
+
+      const userRes = await api.get("/users/me");
+      const user = userRes.data;
+      localStorage.setItem("user", JSON.stringify(user));
+
+      refreshCart();
+      navigate("/home", { replace: true });
+    } catch (err) {
+      setError(err.response?.data?.message || "Google sign-up failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -194,12 +222,33 @@ export default function Signup() {
             </button>
           </form>
 
+          {/* ── OR Divider ── */}
+          <div className="flex items-center gap-3 my-5">
+            <div className="flex-1 h-px bg-slate-200" />
+            <span className="text-xs text-slate-400 font-semibold uppercase tracking-widest">or</span>
+            <div className="flex-1 h-px bg-slate-200" />
+          </div>
+
+          {/* ── Google Sign-Up Button ── */}
+          <div className="w-full">
+            <GoogleLogin
+              onSuccess={handleGoogleLogin}
+              onError={() => setError("Google Sign-In was cancelled or failed.")}
+              width="100%"
+              theme="outline"
+              shape="rectangular"
+              text="signup_with"
+              logo_alignment="left"
+            />
+          </div>
+
           <p className="text-center text-sm text-slate-500 mt-6">
             Already have an account?{" "}
             <Link to="/login" className="text-teal-600 font-black hover:underline underline-offset-2">
               Sign In
             </Link>
           </p>
+
         </div>
       </div>
 

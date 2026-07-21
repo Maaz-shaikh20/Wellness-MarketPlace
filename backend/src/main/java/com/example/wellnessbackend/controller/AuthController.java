@@ -2,6 +2,7 @@ package com.example.wellnessbackend.controller;
 
 import com.example.wellnessbackend.dto.LoginRequest;
 import com.example.wellnessbackend.dto.RegisterRequest;
+import com.example.wellnessbackend.dto.GoogleTokenRequest;
 import com.example.wellnessbackend.entity.PasswordResetToken;
 import com.example.wellnessbackend.entity.PractitionerProfile;
 import com.example.wellnessbackend.entity.RefreshToken;
@@ -13,6 +14,10 @@ import com.example.wellnessbackend.repository.RefreshTokenRepository;
 import com.example.wellnessbackend.repository.UserRepository;
 import com.example.wellnessbackend.security.JwtUtil;
 import com.example.wellnessbackend.service.EmailService;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
 import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -43,6 +49,9 @@ public class AuthController {
 
     @Value("${app.frontend.url}")
     private String frontendUrl;
+
+    @Value("${google.client.id}")
+    private String googleClientId;
 
     // ------------------- REGISTER -------------------
     @PostMapping("/register")
@@ -79,6 +88,82 @@ public class AuthController {
         }
 
         return ResponseEntity.ok(Map.of("message", "User registered successfully"));
+    }
+
+    // ------------------- GOOGLE OAUTH LOGIN -------------------
+    @PostMapping("/google")
+    @Transactional
+    public ResponseEntity<?> googleLogin(@RequestBody GoogleTokenRequest request) {
+        if (request.getCredential() == null || request.getCredential().isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Missing Google credential"));
+        }
+
+        try {
+            // Verify the Google ID token
+            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
+                    new NetHttpTransport(), GsonFactory.getDefaultInstance())
+                    .setAudience(Collections.singletonList(googleClientId))
+                    .build();
+
+            GoogleIdToken idToken = verifier.verify(request.getCredential());
+            if (idToken == null) {
+                return ResponseEntity.status(401).body(Map.of("message", "Invalid Google token"));
+            }
+
+            GoogleIdToken.Payload payload = idToken.getPayload();
+            String googleId  = payload.getSubject();
+            String email     = payload.getEmail();
+            String name      = (String) payload.get("name");
+
+            // Find or create user
+            User user = userRepository.findByEmail(email).orElse(null);
+
+            if (user == null) {
+                // Auto-create new user from Google profile
+                user = new User();
+                user.setName(name != null ? name : email);
+                user.setEmail(email);
+                user.setPassword(null);   // no password for Google users
+                user.setRole(Role.PATIENT);
+                user.setGoogleId(googleId);
+                user.setVerified(true);   // Google already verified the email
+                user = userRepository.save(user);
+            } else {
+                // Link Google ID if not already linked
+                if (user.getGoogleId() == null) {
+                    user.setGoogleId(googleId);
+                    user.setVerified(true);
+                    user = userRepository.save(user);
+                }
+            }
+
+            // Build Spring Security UserDetails
+            UserDetails userDetails = org.springframework.security.core.userdetails.User
+                    .withUsername(user.getEmail())
+                    .password("")  // no password needed
+                    .roles(user.getRole().name())
+                    .build();
+
+            String accessToken  = jwtUtil.generateToken(userDetails, user.getRole().name());
+            String refreshToken = UUID.randomUUID().toString();
+
+            RefreshToken token = new RefreshToken();
+            token.setToken(refreshToken);
+            token.setUser(user);
+            token.setExpiryDate(Instant.now().plusSeconds(7 * 24 * 3600));
+            refreshTokenRepository.save(token);
+
+            return ResponseEntity.ok(Map.of(
+                    "message",      "Login successful",
+                    "accessToken",  accessToken,
+                    "refreshToken", refreshToken,
+                    "role",         user.getRole().name(),
+                    "verified",     user.isVerified()
+            ));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("message", "Google login failed: " + e.getMessage()));
+        }
     }
 
     // ------------------- LOGIN -------------------

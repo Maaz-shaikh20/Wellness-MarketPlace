@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import { useCart } from "../context/CartContext";
+import { GoogleLogin } from "@react-oauth/google";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -66,6 +67,64 @@ export default function Login() {
       navigate("/home", { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || "Login failed. Please check your credentials.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+
+  const handleGoogleLogin = async (credentialResponse) => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await api.post("/auth/google", { credential: credentialResponse.credential });
+      const token = res.data?.accessToken;
+      const role  = res.data?.role;
+      if (!token || !role) throw new Error("Invalid Google login response");
+
+      localStorage.setItem("token", token);
+      localStorage.setItem("role",  role);
+
+      if (role === "ADMIN") {
+        refreshCart();
+        navigate("/admin", { replace: true });
+        return;
+      }
+
+      const userRes = await api.get("/users/me");
+      const user = userRes.data;
+      localStorage.setItem("user", JSON.stringify(user));
+
+      if (role === "PRACTITIONER") {
+        try {
+          const practitionerRes = await api.get(`/practitioners/user/${user.id}`);
+          const practitionerRaw = practitionerRes.data;
+          const practitioner = {
+            id: practitionerRaw.id, userId: user.id,
+            name: user.name, email: user.email,
+            specialization: practitionerRaw.specialization,
+            bio: practitionerRaw.bio,
+            clinicAddress: practitionerRaw.clinicAddress,
+            verified: practitionerRaw.verified,
+            rating: practitionerRaw.rating,
+            certificateLink: practitionerRaw.certificateLink,
+            rejectionReason: practitionerRaw.rejectionReason,
+          };
+          localStorage.setItem("practitioner", JSON.stringify(practitioner));
+          refreshCart();
+          navigate(practitioner.verified ? "/practitioner/home" : "/dashboard", { replace: true });
+        } catch {
+          refreshCart();
+          navigate("/dashboard", { replace: true });
+        }
+        return;
+      }
+
+      refreshCart();
+      navigate("/home", { replace: true });
+    } catch (err) {
+      setError(err.response?.data?.message || "Google login failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -158,6 +217,26 @@ export default function Login() {
               ) : "Sign In"}
             </button>
           </form>
+
+          {/* ── OR Divider ── */}
+          <div className="flex items-center gap-3 my-5">
+            <div className="flex-1 h-px bg-slate-200" />
+            <span className="text-xs text-slate-400 font-semibold uppercase tracking-widest">or</span>
+            <div className="flex-1 h-px bg-slate-200" />
+          </div>
+
+          {/* ── Google Sign-In Button ── */}
+          <div className="w-full">
+            <GoogleLogin
+              onSuccess={handleGoogleLogin}
+              onError={() => setError("Google Sign-In was cancelled or failed.")}
+              width="100%"
+              theme="outline"
+              shape="rectangular"
+              text="signin_with"
+              logo_alignment="left"
+            />
+          </div>
 
           <p className="text-center text-sm text-slate-500 mt-6">
             Don't have an account?{" "}
