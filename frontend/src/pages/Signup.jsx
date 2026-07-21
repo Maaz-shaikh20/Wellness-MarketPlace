@@ -230,15 +230,15 @@ export default function Signup() {
           </div>
 
           {/* ── Google Sign-Up Button ── */}
-          <div className="w-full">
+          <div className="w-full flex justify-center">
             <GoogleLogin
               onSuccess={handleGoogleLogin}
               onError={() => setError("Google Sign-In was cancelled or failed.")}
-              width="100%"
               theme="outline"
               shape="rectangular"
               text="signup_with"
               logo_alignment="left"
+              useOneTap={false}
             />
           </div>
 
