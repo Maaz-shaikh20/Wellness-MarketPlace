@@ -33,10 +33,12 @@ export default function AiRecommendation() {
   const [symptom, setSymptom] = useState("");
   const [history, setHistory] = useState([]);
   const [fdaResults, setFdaResults] = useState([]);
+  const [fdaSearched, setFdaSearched] = useState(false);
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState("");
+  const [fdaError, setFdaError] = useState("");
   const [clearingAll, setClearingAll] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -81,16 +83,22 @@ export default function AiRecommendation() {
     }
   };
 
-  // BUG FIX: was prefixing BACKEND_URL to api instance which already has baseURL set
   const handleFdaSearch = async () => {
     if (!searchQuery.trim()) return;
     setSearching(true);
+    setFdaError("");
+    setFdaSearched(false);
     try {
       const res = await api.get(`/external/openfda/search?query=${encodeURIComponent(searchQuery.trim())}`);
-      setFdaResults(res.data.results || []);
+      // res.data is now a proper JSON object (Map) — .results is an array
+      const results = res.data?.results || [];
+      setFdaResults(results);
+      setFdaSearched(true);
     } catch (err) {
       console.error("FDA Search failed", err);
       setFdaResults([]);
+      setFdaSearched(true);
+      setFdaError("No results found for this substance, or the FDA database is temporarily unavailable.");
     } finally {
       setSearching(false);
     }
@@ -313,25 +321,68 @@ export default function AiRecommendation() {
               </div>
 
               <div className="space-y-6 max-h-[500px] overflow-y-auto pr-4">
-                {fdaResults.map((item, idx) => (
-                  <div key={idx} className="bg-white/5 p-8 rounded-[2rem] border border-white/10 backdrop-blur-sm">
-                    <p className="text-[10px] font-black text-emerald-400 uppercase mb-4 tracking-[0.2em]">Clinical_pharmacology</p>
-                    <h5 className="text-lg font-black text-white mb-4 leading-tight">
-                      {item.spl_product_data_elements?.[0]?.split(' ')[0] || "Unknown Substance"}
-                    </h5>
-                    <p className="text-xs text-slate-300 leading-relaxed font-medium mb-6 line-clamp-6">
-                      {item.clinical_pharmacology?.[0] || item.description?.[0] || "No description available."}
-                    </p>
-                    <div className="pt-6 border-t border-white/10">
-                      <p className="text-[10px] font-bold text-slate-500 uppercase mb-2">Microbiology Notes</p>
-                      <p className="text-[11px] text-slate-400 leading-relaxed line-clamp-4">
-                        {item.microbiology?.[0] || "No clinical microbiology data available."}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                {fdaResults.map((item, idx) => {
+                  // Use reliable openFDA label fields
+                  const brandName = item.openfda?.brand_name?.[0] || null;
+                  const genericName = item.openfda?.generic_name?.[0] || null;
+                  const displayName = brandName || genericName || item.id || "Unknown Substance";
+                  const subtitle = brandName && genericName ? genericName : null;
+                  const indications = item.indications_and_usage?.[0]
+                    || item.purpose?.[0]
+                    || item.description?.[0]
+                    || item.clinical_pharmacology?.[0]
+                    || "No indications data available for this substance.";
+                  const warnings = item.warnings?.[0]
+                    || item.warnings_and_cautions?.[0]
+                    || item.microbiology?.[0]
+                    || null;
 
-                {!searching && fdaResults.length === 0 && (
+                  return (
+                    <div key={idx} className="bg-white/5 p-8 rounded-[2rem] border border-white/10 backdrop-blur-sm">
+                      <p className="text-[10px] font-black text-emerald-400 uppercase mb-3 tracking-[0.2em]">FDA Drug Label</p>
+                      <h5 className="text-lg font-black text-white mb-1 leading-tight">
+                        {displayName}
+                      </h5>
+                      {subtitle && (
+                        <p className="text-xs text-slate-400 mb-4 italic">{subtitle}</p>
+                      )}
+                      <div className="mt-4">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">Indications &amp; Usage</p>
+                        <p className="text-xs text-slate-300 leading-relaxed font-medium line-clamp-6">
+                          {indications}
+                        </p>
+                      </div>
+                      {warnings && (
+                        <div className="pt-5 mt-5 border-t border-white/10">
+                          <p className="text-[10px] font-bold text-amber-400 uppercase mb-2">⚠ Warnings</p>
+                          <p className="text-[11px] text-slate-400 leading-relaxed line-clamp-4">
+                            {warnings}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* Error state */}
+                {!searching && fdaSearched && fdaError && (
+                  <div className="text-center py-12">
+                    <div className="text-3xl mb-3">⚠️</div>
+                    <p className="text-xs font-bold text-rose-400 leading-relaxed">{fdaError}</p>
+                  </div>
+                )}
+
+                {/* No results — searched but empty */}
+                {!searching && fdaSearched && !fdaError && fdaResults.length === 0 && (
+                  <div className="text-center py-12 opacity-60">
+                    <div className="text-3xl mb-3">🔍</div>
+                    <p className="text-xs font-bold uppercase tracking-widest">No_Results_Found</p>
+                    <p className="text-[11px] text-slate-400 mt-2">Try a different substance name (e.g. ibuprofen, aspirin)</p>
+                  </div>
+                )}
+
+                {/* Awaiting input */}
+                {!searching && !fdaSearched && (
                   <div className="text-center py-20 opacity-30">
                     <div className="text-4xl mb-4">🔬</div>
                     <p className="text-xs font-bold uppercase tracking-widest">Awaiting_Input</p>
