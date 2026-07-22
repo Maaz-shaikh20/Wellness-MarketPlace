@@ -26,14 +26,21 @@ public class RecommendationService {
     // ─────────────────────────────────────────────────────────────────────────
     public RecommendationResponseDto generateRecommendation(RecommendationRequestDto dto) {
 
-        // Normalize input: lowercase, collapse extra spaces, remove punctuation
+        // Normalize input: lowercase + strip common conversational filler so that
+        // "I have a headache" → "headache", "suffering from chest pain" → "chest pain"
         String raw = dto.getSymptom().toLowerCase().trim();
-        // Replace common separators (comma, semicolon, slash, " and ", " or ", " with ")
-        // so compound inputs like "stress and headache" or "knee pain, anxiety" each match independently
-        String symptom = raw.replaceAll("[,;/]", " ")
-                            .replaceAll("\\b(and|or|also|with|plus|as well as)\\b", " ")
-                            .replaceAll("\\s+", " ")
-                            .trim();
+
+        String symptom = raw
+                // Strip common conversational prefixes / filler phrases
+                .replaceAll("\\b(i am |i'm |i have |i've got |i got |i feel |i'm feeling |i am feeling |suffering from |experiencing |dealing with |have been having |having |experiencing a |i have a |i have an )\\b", " ")
+                // Normalise hyphens used in compound words (e.g. head-ache → head ache)
+                .replaceAll("-", " ")
+                // Replace common separators so each part can be matched independently
+                .replaceAll("[,;/]", " ")
+                .replaceAll("\\b(and|or|also|with|plus|as well as|along with|together with)\\b", " ")
+                // Collapse multiple spaces
+                .replaceAll("\\s+", " ")
+                .trim();
 
         List<String> therapies = new ArrayList<>();
 
@@ -174,7 +181,9 @@ public class RecommendationService {
             therapies.add("Acupuncture / Biofeedback Therapy / Ayurvedic Shirodhara");
         }
         if (containsAny(symptom,
-                "headache", "head pain", "head pressure", "head ache", "tension headache")) {
+                "headache", "head ache", "headaches", "head pain", "head pressure",
+                "tension headache", "pain in the head", "pain in my head",
+                "my head hurts", "head hurts", "head is hurting")) {
             therapies.add("Acupressure / Aromatherapy / Yoga for Tension Relief");
         }
         if (containsAny(symptom,
