@@ -24,16 +24,20 @@ public class ExternalHealthApiService {
      */
     @SuppressWarnings("unchecked")
     public Map<String, Object> fetchOpenFdaData(String query) {
-        // Build a field-qualified openFDA query:
-        // active_ingredient:"<term>" OR brand_name:"<term>"
-        String encodedQuery = "active_ingredient:\"" + query + "\"+brand_name:\"" + query + "\"";
-        String url = "https://api.fda.gov/drug/label.json?search=" + encodedQuery + "&limit=5";
+        // Search the indexed openfda.generic_name and openfda.brand_name fields.
+        // These fields are properly indexed and return real pharmaceutical drugs,
+        // unlike bare label-text fields (active_ingredient/brand_name) which can
+        // match homeopathic or OTC products that mention the query in their text.
+        // openFDA OR syntax: separate terms with a space inside parentheses.
+        String safeQuery = query.replace("\"", "").trim();
+        String searchExpr = "(openfda.generic_name:\"" + safeQuery + "\"+openfda.brand_name:\"" + safeQuery + "\")";
+        String url = "https://api.fda.gov/drug/label.json?search=" + searchExpr + "&limit=5";
 
         try {
             String rawJson = restTemplate.getForObject(url, String.class);
             return objectMapper.readValue(rawJson, Map.class);
         } catch (Exception e) {
-            // If openFDA returns 404 (no results) or any other error, return empty results
+            // openFDA returns 404 when no results are found — return empty list
             return Map.of("results", Collections.emptyList(), "error", e.getMessage());
         }
     }

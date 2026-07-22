@@ -297,7 +297,7 @@ export default function AiRecommendation() {
           <div className="sticky top-32 bg-slate-900 rounded-[3.5rem] p-10 text-white shadow-2xl shadow-slate-400/30 overflow-hidden">
             <div className="relative z-10">
               <h2 className="text-2xl font-black uppercase italic mb-2">FDA_Reference</h2>
-              <p className="text-slate-400 text-xs font-medium mb-8">Access clinical pharmacology and microbiology data.</p>
+              <p className="text-slate-400 text-xs font-medium mb-8">Look up pharmaceutical drug labels by drug name (e.g. <span className="text-emerald-400 font-bold">ibuprofen</span>, <span className="text-emerald-400 font-bold">aspirin</span>). Not for symptom queries.</p>
 
               <div className="flex gap-3 mb-10">
                 <input
@@ -305,7 +305,7 @@ export default function AiRecommendation() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleFdaSearch()}
-                  placeholder="Search substance..."
+                  placeholder="Drug name (e.g. ibuprofen, aspirin)"
                   className="flex-1 px-6 py-4 rounded-2xl bg-white/10 border border-white/10 text-white placeholder:text-white/30 text-sm focus:outline-none focus:bg-white/20 transition-all"
                 />
                 <button
@@ -322,19 +322,23 @@ export default function AiRecommendation() {
 
               <div className="space-y-6 max-h-[500px] overflow-y-auto pr-4">
                 {fdaResults.map((item, idx) => {
-                  // Use reliable openFDA label fields
-                  const brandName = item.openfda?.brand_name?.[0] || null;
+                  // Build display name — never fall back to a UUID
+                  const brandName   = item.openfda?.brand_name?.[0] || null;
                   const genericName = item.openfda?.generic_name?.[0] || null;
-                  const displayName = brandName || genericName || item.id || "Unknown Substance";
-                  const subtitle = brandName && genericName ? genericName : null;
+                  const substanceName = item.openfda?.substance_name?.[0] || null;
+                  const displayName = brandName || genericName || substanceName || "Unnamed Product";
+                  // Show generic name as subtitle only when brand name is the primary label
+                  const subtitle = brandName && (genericName || substanceName)
+                    ? (genericName || substanceName)
+                    : null;
+                  const manufacturer = item.openfda?.manufacturer_name?.[0] || null;
                   const indications = item.indications_and_usage?.[0]
                     || item.purpose?.[0]
                     || item.description?.[0]
                     || item.clinical_pharmacology?.[0]
-                    || "No indications data available for this substance.";
+                    || "No indications data available for this drug.";
                   const warnings = item.warnings?.[0]
                     || item.warnings_and_cautions?.[0]
-                    || item.microbiology?.[0]
                     || null;
 
                   return (
@@ -344,7 +348,10 @@ export default function AiRecommendation() {
                         {displayName}
                       </h5>
                       {subtitle && (
-                        <p className="text-xs text-slate-400 mb-4 italic">{subtitle}</p>
+                        <p className="text-xs text-slate-300 mb-1 italic">{subtitle}</p>
+                      )}
+                      {manufacturer && (
+                        <p className="text-[10px] text-slate-500 mb-4 uppercase tracking-widest">{manufacturer}</p>
                       )}
                       <div className="mt-4">
                         <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">Indications &amp; Usage</p>
