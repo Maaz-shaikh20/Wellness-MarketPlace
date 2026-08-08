@@ -3,6 +3,24 @@ import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import Navbar from "../components/Navbar";
 
+/* ---- Symptom keyword detector ---- */
+// Returns true when the query looks like a body symptom or medical condition
+// rather than a pharmaceutical drug/substance name.
+const SYMPTOM_KEYWORDS = [
+  "pain", "ache", "aches", "press", "pressure", "tightness", "fever", "fatigue",
+  "nausea", "vomiting", "dizziness", "headache", "rash", "swelling", "bloating",
+  "cramp", "cramps", "stress", "anxiety", "depression", "insomnia", "cough",
+  "cold", "flu", "infection", "inflammation", "shortness", "breathlessness",
+  "palpitation", "discomfort", "numbness", "tingling", "weakness", "fatigue",
+  "bruise", "sprain", "strain", "burn", "itch", "itching", "sore", "soreness"
+];
+
+function looksLikeSymptom(query) {
+  if (!query) return false;
+  const lower = query.toLowerCase();
+  return SYMPTOM_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
 /* ---- Confirm Modal ---- */
 function ConfirmModal({ message, onConfirm, onCancel }) {
   return (
@@ -381,11 +399,32 @@ export default function AiRecommendation() {
 
                 {/* No results — searched but empty */}
                 {!searching && fdaSearched && !fdaError && fdaResults.length === 0 && (
-                  <div className="text-center py-12 opacity-60">
-                    <div className="text-3xl mb-3">🔍</div>
-                    <p className="text-xs font-bold uppercase tracking-widest">No_Results_Found</p>
-                    <p className="text-[11px] text-slate-400 mt-2">Try a different substance name (e.g. ibuprofen, aspirin)</p>
-                  </div>
+                  looksLikeSymptom(searchQuery) ? (
+                    // Smart message: query looks like a symptom, not a drug name
+                    <div className="py-10 px-6 rounded-[2rem] bg-amber-500/10 border border-amber-400/20">
+                      <div className="text-2xl mb-3">💊</div>
+                      <p className="text-[10px] font-black text-amber-400 uppercase tracking-[0.2em] mb-2">
+                        Symptom_Detected
+                      </p>
+                      <p className="text-sm font-bold text-white leading-snug mb-3">
+                        &ldquo;{searchQuery}&rdquo; looks like a symptom, not a drug name.
+                      </p>
+                      <p className="text-[11px] text-slate-400 leading-relaxed">
+                        The FDA Reference looks up pharmaceutical labels by drug name.
+                        Try searching the active ingredient or brand name instead —
+                        e.g. <span className="text-emerald-400 font-bold">aspirin</span>,{" "}
+                        <span className="text-emerald-400 font-bold">ibuprofen</span>,{" "}
+                        <span className="text-emerald-400 font-bold">nitroglycerin</span>.
+                      </p>
+                    </div>
+                  ) : (
+                    // Generic no-results (drug name typed but not found in FDA db)
+                    <div className="text-center py-12 opacity-60">
+                      <div className="text-3xl mb-3">🔍</div>
+                      <p className="text-xs font-bold uppercase tracking-widest">No_Results_Found</p>
+                      <p className="text-[11px] text-slate-400 mt-2">Try a different substance name (e.g. ibuprofen, aspirin)</p>
+                    </div>
+                  )
                 )}
 
                 {/* Awaiting input */}
