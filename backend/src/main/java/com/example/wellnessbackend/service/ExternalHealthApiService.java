@@ -18,45 +18,33 @@ public class ExternalHealthApiService {
     /**
      * OpenFDA: fetch drug/medication label info by drug name.
      *
-     * KEY FIX: The previous implementation concatenated the search expression
-     * directly into the URL string, which caused the special characters
-     * (double-quotes, parentheses, '+') to be sent raw to the FDA server.
-     * The '+' in particular is interpreted as a URL-encoded space on the
-     * server side, so the entire boolean expression was broken and returned
-     * no results.
-     *
-     * We now use UriComponentsBuilder to let Spring properly percent-encode the
-     * search parameter value before sending it. The FDA OR syntax uses a space
-     * between terms — this gets encoded as %20 in the final URL, which is what
-     * the openFDA API actually expects for its Lucene query parser.
-     *
-     * Examples that now work:  ibuprofen, aspirin, lisinopril, metformin
+     * Uses UriComponentsBuilder with a URI template variable so Spring handles
+     * all percent-encoding of special chars (quotes, parens, spaces) correctly.
+     * The {search} placeholder is replaced + encoded in one step via buildAndExpand,
+     * which avoids the double-encoding problem of build().encode().
      */
     @SuppressWarnings("unchecked")
     public Map<String, Object> fetchOpenFdaData(String query) {
-        // Sanitise: strip double-quotes to avoid breaking the Lucene syntax
+        // Strip double-quotes to avoid breaking Lucene syntax
         String safeQuery = query.replace("\"", "").trim();
 
-        // openFDA Lucene OR syntax: two terms separated by a space inside parens.
-        // UriComponentsBuilder will percent-encode this entire value, turning the
-        // inner spaces into %20 and quotes into %22 — which is exactly what the
-        // FDA search engine expects.
-        String searchExpr = "(openfda.generic_name:\"" + safeQuery
+        // Use a URI template variable for the search value — Spring will
+        // percent-encode it correctly when buildAndExpand is called.
+        String searchValue = "(openfda.generic_name:\"" + safeQuery
                 + "\" openfda.brand_name:\"" + safeQuery + "\")";
 
         URI uri = UriComponentsBuilder
                 .fromHttpUrl("https://api.fda.gov/drug/label.json")
-                .queryParam("search", searchExpr)
-                .queryParam("limit", 5)
-                .build()       // build without pre-encoding flag
-                .encode()      // percent-encode special chars in query param values
+                .queryParam("search", "{search}")
+                .queryParam("limit", "5")
+                .buildAndExpand(searchValue)  // encodes {search} correctly
                 .toUri();
 
         try {
             String rawJson = restTemplate.getForObject(uri, String.class);
             return objectMapper.readValue(rawJson, Map.class);
         } catch (Exception e) {
-            // openFDA returns 404 when no results are found — surface empty list
+            // openFDA returns 404 when no results — surface empty list
             return Map.of("results", Collections.emptyList(), "error", e.getMessage());
         }
     }
