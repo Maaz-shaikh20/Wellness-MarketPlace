@@ -3,7 +3,9 @@ package com.example.wellnessbackend.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import java.net.URI;
 import java.util.Collections;
 import java.util.Map;
 
@@ -14,30 +16,47 @@ public class ExternalHealthApiService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
-     * OpenFDA: fetch drug/medication label info.
+     * OpenFDA: fetch drug/medication label info by drug name.
      *
-     * FIX: The previous bare query (search=ibuprofen) returned poor/empty results
-     * because openFDA requires a field-qualified search.
-     * We now search across active_ingredient OR brand_name, cap results at 5,
-     * and parse the raw JSON string into a Map so the controller can return a
-     * proper JSON object (instead of a String that the frontend couldn't parse).
+     * KEY FIX: The previous implementation concatenated the search expression
+     * directly into the URL string, which caused the special characters
+     * (double-quotes, parentheses, '+') to be sent raw to the FDA server.
+     * The '+' in particular is interpreted as a URL-encoded space on the
+     * server side, so the entire boolean expression was broken and returned
+     * no results.
+     *
+     * We now use UriComponentsBuilder to let Spring properly percent-encode the
+     * search parameter value before sending it. The FDA OR syntax uses a space
+     * between terms — this gets encoded as %20 in the final URL, which is what
+     * the openFDA API actually expects for its Lucene query parser.
+     *
+     * Examples that now work:  ibuprofen, aspirin, lisinopril, metformin
      */
     @SuppressWarnings("unchecked")
     public Map<String, Object> fetchOpenFdaData(String query) {
-        // Search the indexed openfda.generic_name and openfda.brand_name fields.
-        // These fields are properly indexed and return real pharmaceutical drugs,
-        // unlike bare label-text fields (active_ingredient/brand_name) which can
-        // match homeopathic or OTC products that mention the query in their text.
-        // openFDA OR syntax: separate terms with a space inside parentheses.
+        // Sanitise: strip double-quotes to avoid breaking the Lucene syntax
         String safeQuery = query.replace("\"", "").trim();
-        String searchExpr = "(openfda.generic_name:\"" + safeQuery + "\"+openfda.brand_name:\"" + safeQuery + "\")";
-        String url = "https://api.fda.gov/drug/label.json?search=" + searchExpr + "&limit=5";
+
+        // openFDA Lucene OR syntax: two terms separated by a space inside parens.
+        // UriComponentsBuilder will percent-encode this entire value, turning the
+        // inner spaces into %20 and quotes into %22 — which is exactly what the
+        // FDA search engine expects.
+        String searchExpr = "(openfda.generic_name:\"" + safeQuery
+                + "\" openfda.brand_name:\"" + safeQuery + "\")";
+
+        URI uri = UriComponentsBuilder
+                .fromHttpUrl("https://api.fda.gov/drug/label.json")
+                .queryParam("search", searchExpr)
+                .queryParam("limit", 5)
+                .build()       // build without pre-encoding flag
+                .encode()      // percent-encode special chars in query param values
+                .toUri();
 
         try {
-            String rawJson = restTemplate.getForObject(url, String.class);
+            String rawJson = restTemplate.getForObject(uri, String.class);
             return objectMapper.readValue(rawJson, Map.class);
         } catch (Exception e) {
-            // openFDA returns 404 when no results are found — return empty list
+            // openFDA returns 404 when no results are found — surface empty list
             return Map.of("results", Collections.emptyList(), "error", e.getMessage());
         }
     }
